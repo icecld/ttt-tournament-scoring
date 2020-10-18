@@ -4,19 +4,19 @@
 		"totalPlayers": 0,
 		"highestScore": "Steam ID string",
 	"players": [
-	  "player": {
-		"steamID": "Steam ID string",
-		"roundsPlayed": 0,
-		"roundsPlayedAsInnocent": 0,
-		"roundsPlayedAsTraitor": 0,
-		"roundsPlayedAsJester": 0,
-		"roundsPlayedAsKiller": 0,
-		"totalscore": 0,
-		"traitorKills": 0,
-		"innocentKills": 0,
-		"killerKills": 0,
-		"jesterKills": 0,
-		"ownTeamKills": 0,
+		"player": {
+			"steamID": "Steam ID string",
+			"roundsPlayed": 0,
+			"roundsPlayedAsInnocent": 0,
+			"roundsPlayedAsTraitor": 0,
+			"roundsPlayedAsJester": 0,
+			"roundsPlayedAsKiller": 0,
+			"totalscore": 0,
+			"traitorKills": 0,
+			"innocentKills": 0,
+			"killerKills": 0,
+			"jesterKills": 0,
+			"ownTeamKills": 0,
 		}
 	]
 }
