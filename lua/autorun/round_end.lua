@@ -1,36 +1,40 @@
 -- Handle all the round end stuff in here, scoring plus saving
 
+--Include Utilities
+
+-- Table of Team Roles
+local TOURNAMENT.TEAM_INNOCENT = {
+    [ROLE_INNOCENT] = true,
+    [ROLE_DETECTIVE] = true,
+    [ROLE_MERCENARY] = true,
+    [ROLE_PHANTOM] = true,
+    [ROLE_GLITCH] = true
+}
+
+local TOURNAMENT.TEAM_TERROR = {
+    [ROLE_TERROR] = true,
+    [ROLE_VAMPIRE] = true,
+    [ROLE_HYPNOTIST] = true,
+    [ROLE_ZOMBIE] = true,
+    [ROLE_ASSASSIN] = true
+}
+
+local TOURNAMENT.TEAM_JESTER = {
+    [ROLE_JESTER] = true,
+    [ROLE_SWAPPER] = true
+}
+
+
 -- Table for tracking what win conditions mean for
 -- different roles in the game
 local TOURNAMENT.winComp = {
-    [WIN_INNOCENT] = {
-        [ROLE_INNOCENT] = true,
-        [ROLE_DETECTIVE] = true,
-        [ROLE_MERCENARY] = true,
-        [ROLE_PHANTOM] = true,
-        [ROLE_GLITCH] = true
-    },
-    [WIN_TERROR] = {
-        [ROLE_TERROR] = true,
-        [ROLE_VAMPIRE] = true,
-        [ROLE_HYPNOTIST] = true,
-        [ROLE_ZOMBIE] = true,
-        [ROLE_ASSASSIN] = true
-    },
-    [WIN_JESTER] = {
-        [ROLE_JESTER] = true,
-        [ROLE_SWAPPER] = true
-    },
+    [WIN_INNOCENT] = TOURNAMENT.TEAM_INNOCENT,
+    [WIN_TERROR] = TOURNAMENT.TEAM_TERROR,
+    [WIN_JESTER] = TOURNAMENT.TEAM_JESTER,
     [WIN_KILLER] = {
         [ROLE_KILLER] = true
     },
-    [WIN_TIMELIMIT] = {
-        [ROLE_INNOCENT] = true,
-        [ROLE_DETECTIVE] = true,
-        [ROLE_MERCENARY] = true,
-        [ROLE_PHANTOM] = true,
-        [ROLE_GLITCH] = true
-    },
+    [WIN_TIMELIMIT] = TOURNAMENT.TEAM_INNOCENT
 }
 
 
@@ -41,9 +45,36 @@ function calcTeamWinBonus(win_type)
     
     -- Check who won and calculate team score 
     if wintype == WIN_INNOCENT or wintype == WIN_TIMELIMIT then
-        
+        -- Innocents win - bonus = number of living players remaining
+        -- Yes this will give a bonus for a living jester 
+        for k,v in pairs(player.getAll()) do
+            win_bonus = win_bonus + util.bool2num(v:Alive)
+        end
     else wintype == WIN_TERROR then
+        -- Traitors get (num_killed)/(num_traitor-num_dead_traitor)
 
+        num_killed = 0
+        num_traitor = 0
+        num_dead_traitor = 0
+        -- For all players
+        for k,v in pairs(player.getAll()) do
+            -- If player role not in team traitor
+            if TOURNAMENT.TEAM_TRAITOR[v:GetRole()] then
+                -- How many traitors
+                num_traitor = num_traitor + 1
+                -- Is dead traitor
+                if not v:Alive() then
+                    num_dead_traitor = num_dead_traitor + 1
+                end
+            else
+                -- If player is dead not traitor then increment                
+                num_killed = num_killed + bool2num(v:Alive)                
+            end
+        end
+
+        -- Calculate win bonus
+        win_bonus = num_killed/(num_traitor-num_dead_traitor)
+        
     else wintype == WIN_KILLER then
         -- Killer kills everyone, bonus = 1 per kill
         win_bonus = self.round_score["innocentKills"] + self.round_score["traitorKills"]
@@ -80,7 +111,7 @@ function roundEndTeamScoring(win_type)
             if v:Alive() ~= true then score_modifier = score_modifier/2 end
             
             -- Give win bonus to player
-            v:awardScore(win_bonus)
+            v:awardScore(win_bonus*score_modifier)
         end
 
     end
