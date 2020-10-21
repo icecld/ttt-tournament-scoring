@@ -136,6 +136,7 @@ function readScoresFromDisk()
   if file.Exists("playerdata.json", "tournamentscoring") == true then
     local data = file.Read("playerdata.json", "tournamentscoring")
   else
+    PrintMessage(HUD_PRINTCONSOLE, "No saved player data found.")
     local data = "{}"
   end
 
