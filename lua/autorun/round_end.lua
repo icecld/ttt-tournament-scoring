@@ -3,6 +3,7 @@
 --Include Utilities
 
 -- Table of Team Roles
+
 TOURNAMENT.TEAM_INNOCENT = {
     [ROLE_INNOCENT] = true,
     [ROLE_DETECTIVE] = true,
@@ -92,6 +93,7 @@ end
 -- Hand out scores at end of round for team performance
 function roundEndTeamScoring(win_type)
 
+
     -- Winning team base bonus
     local win_bonus = calcTeamWinBonus(win_type)
 
@@ -119,36 +121,63 @@ function roundEndTeamScoring(win_type)
 
 end
 
+function roundEndIncrementCounters()
+  --increment overall round counters
+  TOURNAMENT.totalRounds = TOURNAMENT.totalRounds + 1
+  TOURNAMENT.sessionRounds = TOURNAMENT.sessionRounds + 1
+
+  --increment players' individual round counters, depending on which team they're on
+  for k,v in pairs(player.getAll()) do
+
+    v.global_score["totalRounds"] = v.global_score["totalRounds"] + 1
+    v.session_score["totalRounds"] = v.session_score["totalRounds"] + 1
+
+    if TOURNAMENT.TEAM_INNOCENT[v:GetRole()] then
+      v.global_score["roundsPlayedAsInnocent"] = v.global_score["roundsPlayedAsInnocent"] + 1
+      v.session_score["roundsPlayedAsInnocent"] = v.session_score["roundsPlayedAsInnocent"] + 1
+    elseif TOURNAMENT.TEAM_TRAITOR[v:GetRole()] then
+      v.global_score["roundsPlayedAsTraitor"] = v.global_score["roundsPlayedAsTraitor"] + 1
+      v.session_score["roundsPlayedAsTraitor"] = v.session_score["roundsPlayedAsTraitor"] + 1
+    elseif TOURNAMENT.TEAM_JESTER[v:GetRole()] then
+      v.global_score["roundsPlayedAsJester"] = v.global_score["roundsPlayedAsJester"] + 1
+      v.session_score["roundsPlayedAsJester"] = v.session_score["roundsPlayedAsJester"] + 1
+    elseif ROLE_KILLER == v:GetRole() then
+      v.global_score["roundsPlayedAsJester"] = v.global_score["roundsPlayedAsJester"] + 1
+      v.session_score["roundsPlayedAsJester"] = v.session_score["roundsPlayedAsJester"] + 1
+    end
+  end
+
+end
+
 function constructScoresTableForExport()
   -- Construct the table from the JSON file
-  local meta = {}
+  local meta = {
+    totalRounds = TOURNAMENT.totalRounds
+  }
+
+
   local players = {}
 
   for k,v in pairs(player.getAll()) do -- Get all the current data from the players table
     -- Build the table for this player
     local thisPlayer = {
       steamID = v:SteamID(),
-      roundsPlayed = v[global_score]["roundsPlayed"],
-      roundsPlayedAsInnocent = v[global_score]["roundsPlayedAsInnocent"],
-      roundsPlayedAsTraitor = v[global_score]["roundsPlayedAsTraitor"],
-      roundsPlayedAsJester = v[global_score]["roundsPlayedAsJester"],
-      roundsPlayedAsKiller = v[global_score]["roundsPlayedAsKiller"],
-      totalScore = v[global_score]["totalScore"],
-      traitorKills = v[global_score]["traitorKills"],
-      innocentKills = v[global_score]["innocentKills"],
-      killerKills = v[global_score]["killerKills"],
-      jesterKills = v[global_score]["jesterKills"],
-      ownTeamKills = v[global_score]["ownTeamKills"],
+      roundsPlayed = v.global_score["roundsPlayed"],
+      roundsPlayedAsInnocent = v.global_score["roundsPlayedAsInnocent"],
+      roundsPlayedAsTraitor = v.global_score["roundsPlayedAsTraitor"],
+      roundsPlayedAsJester = v.global_score["roundsPlayedAsJester"],
+      roundsPlayedAsKiller = v.global_score["roundsPlayedAsKiller"],
+      totalScore = v.global_score["totalScore"],
+      traitorKills = v.global_score["traitorKills"],
+      innocentKills = v.global_score["innocentKills"],
+      killerKills = v.global_score["killerKills"],
+      jesterKills = v.global_score["jesterKills"],
+      ownTeamKills = v.global_score["ownTeamKills"],
     }
     table.insert(players, thisPlayer) -- Append it to the table for all players
   end
 
   return {meta, players} -- return the table in a format that's nice for TableToJSON
-end
-
-function importScoresTable()
-  -- Construct the table from the JSON file
-
 end
 
 -- Write the scores to the JSON file
@@ -168,5 +197,14 @@ function readScoresFromDisk()
     local data = "{}"
   end
 
-  return util.JSONToTable(data)
+  local tableFromDisk util.JSONToTable(data)
+
+  for k,v in pairs(tableFromDisk["players"]) do
+    -- search table for the currently online players and recall their saved scores
+    -- then make a list of the offline players so they don't get overwritten next time
+    -- is there an efficient way to do this without having to have nested iteratations
+    -- that exhaustively search both the recalled and online players tables for matching IDs?
+  end
+
+
 end
