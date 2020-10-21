@@ -3,7 +3,7 @@
 --Include Utilities
 
 -- Table of Team Roles
-local TOURNAMENT.TEAM_INNOCENT = {
+TOURNAMENT.TEAM_INNOCENT = {
     [ROLE_INNOCENT] = true,
     [ROLE_DETECTIVE] = true,
     [ROLE_MERCENARY] = true,
@@ -11,7 +11,7 @@ local TOURNAMENT.TEAM_INNOCENT = {
     [ROLE_GLITCH] = true
 }
 
-local TOURNAMENT.TEAM_TERROR = {
+TOURNAMENT.TEAM_TERROR = {
     [ROLE_TERROR] = true,
     [ROLE_VAMPIRE] = true,
     [ROLE_HYPNOTIST] = true,
@@ -19,7 +19,7 @@ local TOURNAMENT.TEAM_TERROR = {
     [ROLE_ASSASSIN] = true
 }
 
-local TOURNAMENT.TEAM_JESTER = {
+TOURNAMENT.TEAM_JESTER = {
     [ROLE_JESTER] = true,
     [ROLE_SWAPPER] = true
 }
@@ -56,7 +56,8 @@ function calcTeamWinBonus(win_type)
         num_killed = 0
         num_traitor = 0
         num_dead_traitor = 0
-        -- For all players
+        -- For all players get required numbers, this should be replaced
+        -- with online tracking of these values 
         for k,v in pairs(player.getAll()) do
             -- If player role not in team traitor
             if TOURNAMENT.TEAM_TRAITOR[v:GetRole()] then
