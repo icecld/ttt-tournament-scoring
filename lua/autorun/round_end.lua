@@ -39,7 +39,7 @@ local TOURNAMENT.winComp = {
 
 
 -- Calculate baseline bonus for members of winning team
-function calcTeamWinBonus(win_type)
+function calcTeamWinBonus(wintype)
 
     local win_bonus = 0
 
@@ -50,7 +50,7 @@ function calcTeamWinBonus(win_type)
         for k,v in pairs(player.getAll()) do
             win_bonus = win_bonus + util.bool2num(v:Alive)
         end
-    else wintype == WIN_TERROR then
+    elseif wintype == WIN_TERROR then
         -- Traitors get (num_killed)/(num_traitor-num_dead_traitor)
 
         num_killed = 0
@@ -75,10 +75,10 @@ function calcTeamWinBonus(win_type)
         -- Calculate win bonus
         win_bonus = num_killed/(num_traitor-num_dead_traitor)
 
-    else wintype == WIN_KILLER then
+    elseif wintype == WIN_KILLER then
         -- Killer kills everyone, bonus = 1 per kill
         win_bonus = self.round_score["innocentKills"] + self.round_score["traitorKills"]
-    else wintype == WIN_JESTER then
+    elseif wintype == WIN_JESTER then
         -- Jester jests everyone, bonus = 1 per player on server
         win_bonus = player.GetCount()
     end
