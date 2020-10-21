@@ -6,7 +6,7 @@ if not plymeta then Error("FAILED TO FIND PLAYER TABLE") return end
 
 
 
--- Defining player tournament scoring table JSON 
+-- Defining player tournament scoring table JSON
 -- "{
 --			"steamID": "Steam ID string",
 --			"roundsPlayed": 0,
@@ -22,10 +22,26 @@ if not plymeta then Error("FAILED TO FIND PLAYER TABLE") return end
 --			"ownTeamKills": 0
 --		}
 
+function plymeta:initGlobalScoreTable()
+
+  self.global_score = {}
+  self.global_score["roundsPlayed"] = 0
+  self.global_score["roundsPlayedAsInnocent"] = 0
+  self.global_score["roundsPlayedAsTraitor"] = 0
+  self.global_score["roundsPlayedAsJester"] = 0
+  self.global_score["roundsPlayedAsKiller"] = 0
+  self.global_score["totalScore"] = 0
+  self.global_score["traitorKills"] = 0
+  self.global_score["innocentKills"] = 0
+  self.global_score["killerKills"] = 0
+  self.global_score["jesterKills"] = 0
+  self.global_score["ownTeamKills"] = 0
+
+end
 
 -- Table for storing session data
 function plymeta:initSessionScoreTable()
-    
+
     self.session_score = {}
     self.session_score["roundsPlayed"] = 0
     self.session_score["roundsPlayedAsInnocent"] = 0
@@ -38,7 +54,7 @@ function plymeta:initSessionScoreTable()
     self.session_score["killerKills"] = 0
     self.session_score["jesterKills"] = 0
     self.session_score["ownTeamKills"] = 0
-    
+
 end
 
 --Table for storing round data
@@ -52,6 +68,8 @@ function plymeta:initRoundScoreTable()
     self.round_score["jesterKills"] = 0
 
 end
+
+
 
 -- Award player some score
 function plymeta:awardScore(pnts)

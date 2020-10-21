@@ -57,7 +57,7 @@ function calcTeamWinBonus(wintype)
         num_traitor = 0
         num_dead_traitor = 0
         -- For all players get required numbers, this should be replaced
-        -- with online tracking of these values 
+        -- with online tracking of these values
         for k,v in pairs(player.getAll()) do
             -- If player role not in team traitor
             if TOURNAMENT.TEAM_TRAITOR[v:GetRole()] then
@@ -119,14 +119,41 @@ function roundEndTeamScoring(win_type)
 
 end
 
-function constructScoresTable()
+function constructScoresTableForExport()
+  -- Construct the table from the JSON file
+  local meta = {}
+  local players = {}
+
+  for k,v in pairs(player.getAll()) do -- Get all the current data from the players table
+    -- Build the table for this player
+    local thisPlayer = {
+      steamID = v:SteamID(),
+      roundsPlayed = v[global_score]["roundsPlayed"],
+      roundsPlayedAsInnocent = v[global_score]["roundsPlayedAsInnocent"],
+      roundsPlayedAsTraitor = v[global_score]["roundsPlayedAsTraitor"],
+      roundsPlayedAsJester = v[global_score]["roundsPlayedAsJester"],
+      roundsPlayedAsKiller = v[global_score]["roundsPlayedAsKiller"],
+      totalScore = v[global_score]["totalScore"],
+      traitorKills = v[global_score]["traitorKills"],
+      innocentKills = v[global_score]["innocentKills"],
+      killerKills = v[global_score]["killerKills"],
+      jesterKills = v[global_score]["jesterKills"],
+      ownTeamKills = v[global_score]["ownTeamKills"],
+    }
+    table.insert(players, thisPlayer) -- Append it to the table for all players
+  end
+
+  return {meta, players} -- return the table in a format that's nice for TableToJSON
+end
+
+function importScoresTable()
   -- Construct the table from the JSON file
 
 end
 
 -- Write the scores to the JSON file
-function writeScoresToDisk(someTableFromSomewhere)
-  local data = util.TableToJSON(someTableFromSomewhere) -- Convert the player table to JSON
+function writeScoresToDisk()
+  local data = util.TableToJSON(constructScoresTableForExport()) -- Convert the player table to JSON
   file.CreateDir( "tournamentscoring" ) -- Create the directory if it doesn't exist
   file.Write( "tournamentscoring/playerdata.json", data) -- Write the data to the JSON file
 end
