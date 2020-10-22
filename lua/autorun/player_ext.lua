@@ -69,7 +69,10 @@ function plymeta:initRoundScoreTable()
 
 end
 
-
+-- Print player's current global score
+function plymeta:printScore()
+    self:PrintMessage( HUD_PRINTTALK, "Your all-time score is " .. self.global_score["totalScore"] .. ", over " .. self.global_score["totalRounds"] .. " rounds.")
+end
 
 -- Award player some score
 function plymeta:awardScore(pnts)

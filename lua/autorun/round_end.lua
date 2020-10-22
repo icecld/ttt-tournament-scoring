@@ -114,6 +114,7 @@ function roundEndTeamScoring(win_type)
             if v:Alive() ~= true then score_modifier = score_modifier/2 end
 
             -- Give win bonus to player
+            v:PrintMessage( HUD_PRINTTALK, "You have been awarded " .. (win_bonus*score_modifier) .. " end of round points!" )
             v:awardScore(win_bonus*score_modifier)
         end
 
@@ -177,6 +178,11 @@ function constructScoresTableForExport()
     table.insert(players, thisPlayer) -- Append it to the table for all players
   end
 
+  -- Don't forget to append the offline players to the table
+  for k,v in pairs(TOURNAMENT.offlinePlayers) do
+    table.insert(players, v)
+  end
+
   return {meta, players} -- return the table in a format that's nice for TableToJSON
 end
 
@@ -197,13 +203,28 @@ function readScoresFromDisk()
     local data = "{}"
   end
 
-  local tableFromDisk util.JSONToTable(data)
+  local tableFromDisk = util.JSONToTable(data)
+
+  -- search table for the currently online players and recall their saved scores
+  -- then make a list of the offline players so they don't get overwritten next time
+
+  -- ** @Tim: is there a more efficient way to do this without having to have nested iteratations
+  -- that linear search both the recalled and online players tables for matching IDs?
+
+  TOURNAMENT.offlinePlayers = {}
 
   for k,v in pairs(tableFromDisk["players"]) do
-    -- search table for the currently online players and recall their saved scores
-    -- then make a list of the offline players so they don't get overwritten next time
-    -- is there an efficient way to do this without having to have nested iteratations
-    -- that exhaustively search both the recalled and online players tables for matching IDs?
+    local matchfound = false
+    for i,j in pairs(player.getAll()) do
+      if v:SteamID() == j.steamID then
+        matchfound = true
+        -- some code to set all the variables for the player's scores here.
+        break
+      end
+      §
+    -- if no steam ID match was found, they must be an offline player
+    -- store away their score in the offlinePlayers table for re-saving later
+    if matchfound == false then table.insert(TOURNAMENT.offlinePlayers, v) end
   end
 
 

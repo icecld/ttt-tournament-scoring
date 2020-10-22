@@ -5,6 +5,7 @@
 TOURNAMENT = {}
 TOURNAMENT.totalRounds = 0
 TOURNAMENT.sessionRounds = 0
+TOURNAMENT.nonplayers = {}
 
 -- Messing with the player metatable following ttt
 -- In here we extend the metatable to track round performance
