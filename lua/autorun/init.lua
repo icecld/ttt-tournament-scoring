@@ -3,7 +3,7 @@
 -- Define scoring table
 -- ttt already defines SCORE let's use TOURNAMENT to avoid confusion in namespace
 TOURNAMENT = {}
-TOURNAMENT.totalRounds = 0
+TOURNAMENT.allScores.meta.totalRounds = 0
 TOURNAMENT.sessionRounds = 0
 TOURNAMENT.nonplayers = {}
 

@@ -126,7 +126,7 @@ end
 
 function roundEndIncrementCounters()
   --increment overall round counters
-  TOURNAMENT.totalRounds = TOURNAMENT.totalRounds + 1
+  TOURNAMENT.allScores.meta.totalRounds = TOURNAMENT.allScores.meta.totalRounds + 1
   TOURNAMENT.sessionRounds = TOURNAMENT.sessionRounds + 1
 
   --increment players' individual round counters, depending on which team they're on
@@ -154,38 +154,16 @@ end
 
 function constructScoresTableForExport()
   -- Construct the table from the JSON file
-  local meta = {
-    totalRounds = TOURNAMENT.totalRounds
-  }
 
-
-  local players = {}
-
-  for k,v in pairs(player.getAll()) do -- Get all the current data from the players table
-    -- Build the table for this player
-    local thisPlayer = {
-      steamID = v:SteamID(),
-      roundsPlayed = v.global_score["roundsPlayed"],
-      roundsPlayedAsInnocent = v.global_score["roundsPlayedAsInnocent"],
-      roundsPlayedAsTraitor = v.global_score["roundsPlayedAsTraitor"],
-      roundsPlayedAsJester = v.global_score["roundsPlayedAsJester"],
-      roundsPlayedAsKiller = v.global_score["roundsPlayedAsKiller"],
-      totalScore = v.global_score["totalScore"],
-      traitorKills = v.global_score["traitorKills"],
-      innocentKills = v.global_score["innocentKills"],
-      killerKills = v.global_score["killerKills"],
-      jesterKills = v.global_score["jesterKills"],
-      ownTeamKills = v.global_score["ownTeamKills"],
-    }
-    table.insert(players, thisPlayer) -- Append it to the table for all players
+  -- We need to transfer every player's global_score table back into the TOURNAMENT.allScores
+  -- all this memory juggling will get tiring maybe we should get rid of global_score and do it all
+  -- in TOURNAMENT.allScores.players
+  for k,v in pairs(player.getAll()) do
+    TOURNAMENT.allScores.players[v:SteamID()] = v.global_score
   end
 
-  -- Don't forget to append the offline players to the table
-  for k,v in pairs(TOURNAMENT.offlinePlayers) do
-    table.insert(players, v)
-  end
-
-  return {meta, players} -- return the table in a format that's nice for TableToJSON
+  -- We are already tracking metadata in TOURNAMENT.allScores.meta
+  return TOURNAMENT.allScores -- return the table in a format that's nice for TableToJSON
 end
 
 -- Write the scores to the JSON file
@@ -197,6 +175,17 @@ function writeScoresToDisk()
   file.Write( "tournamentscoring/playerdata.json", data) -- Write the data to the JSON file
 end
 
+-- If player not in tournament table then add player to the tournament table
+function addToTournament(ply)
+  -- Check if that SteamID already in the allScores.players table
+  if not TOURNAMENT.allScores.players[v:SteamID()] then
+    -- WARNING players must have a valid global_score table before doing this. Make sure to create when
+    -- joining the server.
+    TOURNAMENT.allScores.players[v:SteamID()] = v:global_score
+    PrintMessage(HUD_PRINTCONSOLE, "Player" .. v:Nick() .. "added to tournament scoring table.")
+  end
+end
+
 -- Read in the scores from the JSON file
 function readScoresFromDisk()
   
@@ -204,7 +193,7 @@ function readScoresFromDisk()
   if file.Exists("playerdata.json", "tournamentscoring") == true then
     local data = file.Read("playerdata.json", "tournamentscoring")
   else
-    PrintMessage(HUD_PRINTCONSOLE, "No saved player data found.")
+    PrintMessage(HUD_PRINTCONSOLE, "No saved tournament data found.")
     local data = "{}"
   end
 
@@ -215,30 +204,36 @@ function readScoresFromDisk()
 
   -- ** @Tim: is there a more efficient way to do this without having to have nested iteratations
   -- that linear search both the recalled and online players tables for matching IDs?
+  -- ** @George: I think it will work better to store the whole of the disk score file in memory, 
+  -- update and write out as needed
 
-  TOURNAMENT.offlinePlayers = {}
+  -- Bring full table into memory
+  TOURNAMENT.allScores = tableFromDisk
 
-  for k,v in pairs(tableFromDisk["players"]) do
-    local matchfound = false
-    for i,j in pairs(player.getAll()) do
-      if v:SteamID() == j.steamID then
-        matchfound = true
-        -- some code to set all the variables for the player's scores here.
-        break
-      end
-
-    -- if no steam ID match was found, they must be an offline player
-    -- store away their score in the offlinePlayers table for re-saving later
-    if matchfound == false then table.insert(TOURNAMENT.offlinePlayers, v) end
+  -- Using Steam ID as Key in TOURNAMENT.allSocres will allow non-conflicting access
+  -- Add any new players to this score table, must call when player joins as well
+  for k,v in pairs(player.getAll())    
+      addToTournament(v)
   end
+
+  -- Update player global score tables to match tournament score table
+  for k,v in pairs(player.getAll())    
+      v.global_score = TOURNAMENT.allScores.players[v:SteamID()]
+  end
+
+  -- We now have all of the file containing the score history stored in both PlyMeta.global_score tables
+  -- and also in TOURNAMENT.allScores.players[STEAM_ID], this isn't great but let's see what happens
+
 end
 
 -- Hook function for applying scores at end of round accepts win type as vararg input
 function roundEndScoring(win_type)
-  readScoresFromDisk()
+  --readScoresFromDisk()
   
   -- *functions to hand out scores to go here*
   roundEndTeamScoring(win_type)
+  --roundEndIndividualScoring() -- not implemented
+  --rountEndVoteScoring()       -- not implemented
 
   writeScoresToDisk()
 end
