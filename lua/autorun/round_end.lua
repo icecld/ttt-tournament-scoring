@@ -113,9 +113,11 @@ function roundEndTeamScoring(win_type)
             -- Half points for deados is final modifier
             if v:Alive() ~= true then score_modifier = score_modifier/2 end
 
+            ply_score = win_bonus*score_modifier
+
             -- Give win bonus to player
-            v:PrintMessage( HUD_PRINTTALK, "You have been awarded " .. (win_bonus*score_modifier) .. " end of round points!" )
-            v:awardScore(win_bonus*score_modifier)
+            v:PrintMessage( HUD_PRINTTALK, "You have been awarded " .. (ply_score) .. " end of round points!" )
+            v:awardScore(ply_score)
         end
 
     end
@@ -189,12 +191,15 @@ end
 -- Write the scores to the JSON file
 function writeScoresToDisk()
   local data = util.TableToJSON(constructScoresTableForExport()) -- Convert the player table to JSON
-  file.CreateDir( "tournamentscoring" ) -- Create the directory if it doesn't exist
+  if not file.Exists("tournamentscoring") then
+    file.CreateDir( "tournamentscoring" ) -- Create the directory if it doesn't exist
+  end
   file.Write( "tournamentscoring/playerdata.json", data) -- Write the data to the JSON file
 end
 
 -- Read in the scores from the JSON file
 function readScoresFromDisk()
+  
   -- If the file  exists, read it, else give empty JSON to return as a table.
   if file.Exists("playerdata.json", "tournamentscoring") == true then
     local data = file.Read("playerdata.json", "tournamentscoring")
@@ -228,10 +233,12 @@ function readScoresFromDisk()
   end
 end
 
-function roundEndScoring()
+-- Hook function for applying scores at end of round accepts win type as vararg input
+function roundEndScoring(win_type)
   readScoresFromDisk()
   
   -- *functions to hand out scores to go here*
+  roundEndTeamScoring(win_type)
 
   writeScoresToDisk()
 end
