@@ -221,11 +221,19 @@ function readScoresFromDisk()
         -- some code to set all the variables for the player's scores here.
         break
       end
-      §
+
     -- if no steam ID match was found, they must be an offline player
     -- store away their score in the offlinePlayers table for re-saving later
     if matchfound == false then table.insert(TOURNAMENT.offlinePlayers, v) end
   end
-
-
 end
+
+function roundEndScoring()
+  readScoresFromDisk()
+  
+  -- *functions to hand out scores to go here*
+
+  writeScoresToDisk()
+end
+
+hook.Add("TTTEndRound", "TournamentRoundEndScoring", roundEndScoring)
