@@ -93,10 +93,8 @@ end
 -- Hand out scores at end of round for team performance
 function roundEndTeamScoring(win_type)
 
-
     -- Winning team base bonus
     local win_bonus = calcTeamWinBonus(win_type)
-
 
     -- For each player check if their team won and allocate points
     for k,v in pairs(player.getAll()) do
@@ -119,7 +117,6 @@ function roundEndTeamScoring(win_type)
             v:PrintMessage( HUD_PRINTTALK, "You have been awarded " .. (ply_score) .. " end of round points!" )
             v:awardScore(ply_score)
         end
-
     end
 
 end
@@ -228,7 +225,9 @@ end
 
 -- Hook function for applying scores at end of round accepts win type as vararg input
 function roundEndScoring(win_type)
-  --readScoresFromDisk()
+  -- no need to read because all data already in TOURNAMENT.allScores table
+  -- at server start must call readScoresFromDisk()
+  --readScoresFromDisk() 
   
   -- *functions to hand out scores to go here*
   roundEndTeamScoring(win_type)
