@@ -12,6 +12,8 @@ TOURNAMENT.nonplayers = {}
 include("player_ext.lua")     -- Serverside
 include("player_ext_shd.lua") -- Shared
 
+--Handling intra-round scoring based on players' acions, e.g. innocent killed a traitor
+include("individual_scoring.lua")
 
 -- Round end handling, team scores etc.
 include("round_end.lua")

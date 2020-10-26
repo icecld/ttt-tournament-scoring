@@ -185,7 +185,7 @@ end
 
 -- Read in the scores from the JSON file
 function readScoresFromDisk()
-  
+
   -- If the file  exists, read it, else give empty JSON to return as a table.
   if file.Exists("playerdata.json", "tournamentscoring") == true then
     local data = file.Read("playerdata.json", "tournamentscoring")
@@ -201,7 +201,7 @@ function readScoresFromDisk()
 
   -- ** @Tim: is there a more efficient way to do this without having to have nested iteratations
   -- that linear search both the recalled and online players tables for matching IDs?
-  -- ** @George: I think it will work better to store the whole of the disk score file in memory, 
+  -- ** @George: I think it will work better to store the whole of the disk score file in memory,
   -- update and write out as needed
 
   -- Bring full table into memory
@@ -209,12 +209,12 @@ function readScoresFromDisk()
 
   -- Using Steam ID as Key in TOURNAMENT.allSocres will allow non-conflicting access
   -- Add any new players to this score table, must call when player joins as well
-  for k,v in pairs(player.getAll())    
+  for k,v in pairs(player.getAll())
       addToTournament(v)
   end
 
   -- Update player global score tables to match tournament score table
-  for k,v in pairs(player.getAll())    
+  for k,v in pairs(player.getAll())
       v.global_score = TOURNAMENT.allScores.players[v:SteamID()]
   end
 
@@ -227,8 +227,9 @@ end
 function roundEndScoring(win_type)
   -- no need to read because all data already in TOURNAMENT.allScores table
   -- at server start must call readScoresFromDisk()
-  --readScoresFromDisk() 
-  
+  --readScoresFromDisk()
+  roundEndIncrementCounters()
+
   -- *functions to hand out scores to go here*
   roundEndTeamScoring(win_type)
   --roundEndIndividualScoring() -- not implemented
