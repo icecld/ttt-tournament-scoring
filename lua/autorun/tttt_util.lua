@@ -15,3 +15,12 @@ function util.tableLen(tab)
   end
   return n
 end
+
+-- If DEBUG then print debug messages
+function util.ttttDebug(msg)
+    --if SERVER then 
+        if TOURNAMENT.DEBUG:GetBool() then 
+          print(msg)
+        end
+    --end
+end
