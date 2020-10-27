@@ -183,46 +183,6 @@ function addToTournament(ply)
   end
 end
 
--- Read in the scores from the JSON file
-function readScoresFromDisk()
-
-  -- If the file  exists, read it, else give empty JSON to return as a table.
-  if file.Exists("playerdata.json", "tournamentscoring") == true then
-    local data = file.Read("playerdata.json", "tournamentscoring")
-  else
-    PrintMessage(HUD_PRINTCONSOLE, "No saved tournament data found.")
-    local data = "{}"
-  end
-
-  local tableFromDisk = util.JSONToTable(data)
-
-  -- search table for the currently online players and recall their saved scores
-  -- then make a list of the offline players so they don't get overwritten next time
-
-  -- ** @Tim: is there a more efficient way to do this without having to have nested iteratations
-  -- that linear search both the recalled and online players tables for matching IDs?
-  -- ** @George: I think it will work better to store the whole of the disk score file in memory,
-  -- update and write out as needed
-
-  -- Bring full table into memory
-  TOURNAMENT.allScores = tableFromDisk
-
-  -- Using Steam ID as Key in TOURNAMENT.allSocres will allow non-conflicting access
-  -- Add any new players to this score table, must call when player joins as well
-  for k,v in pairs(player.getAll())
-      addToTournament(v)
-  end
-
-  -- Update player global score tables to match tournament score table
-  for k,v in pairs(player.getAll())
-      v.global_score = TOURNAMENT.allScores.players[v:SteamID()]
-  end
-
-  -- We now have all of the file containing the score history stored in both PlyMeta.global_score tables
-  -- and also in TOURNAMENT.allScores.players[STEAM_ID], this isn't great but let's see what happens
-
-end
-
 -- Hook function for applying scores at end of round accepts win type as vararg input
 function roundEndScoring(win_type)
   -- no need to read because all data already in TOURNAMENT.allScores table
@@ -238,4 +198,7 @@ function roundEndScoring(win_type)
   writeScoresToDisk()
 end
 
+
 hook.Add("TTTEndRound", "TournamentRoundEndScoring", roundEndScoring)
+
+
