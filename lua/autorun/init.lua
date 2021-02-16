@@ -36,7 +36,8 @@ WIN_KILLER = 6
 -- Define scoring table
 -- ttt already defines SCORE let's use TOURNAMENT to avoid confusion in namespace
 TOURNAMENT.allScores = {}
-TOURNAMENT.allScores.meta = {totalRounds = 0}
+TOURNAMENT.players = {}
+--TOURNAMENT.allScores.meta = {totalRounds = 0}
 TOURNAMENT.sessionRounds = 0
 TOURNAMENT.nonplayers = {}
 
@@ -53,18 +54,18 @@ include("round_end.lua")
 
 -- If player not in tournament table then add player to the tournament table
 function addToTournament(ply)
-  util.ttttDebug("TTTT DEBUG: Add new player to the tournament score table " .. ply:AccountID())
+  print(ply:SteamID())
+  util.ttttDebug("TTTT DEBUG: Add new player to the tournament score table " .. ply:Name())
   -- Check if that SteamID already in the allScores.players table
-  if not TOURNAMENT.allScores.players[ply:AccountID()] then
+  if not TOURNAMENT.players[ply:SteamID()] then
       -- WARNING players must have a valid global_score table before doing this. Make sure to create when
       -- joining the server.
       if not ply.global_score then
-        util.ttttDebug("TTTT DEBUG: " .. ply:AccountID() .. " is a noob. has no global score... initialising...")
-        ply.initGlobalScoreTable()
+        util.ttttDebug("TTTT DEBUG: " .. ply:Name() .. " is a noob. has no global score... initialising...")
+        ply:initGlobalScoreTable()
       end
-      TOURNAMENT.allScores.players[ply:SteamID()] = ply.global_score
-      print("Player" .. ply:AccountID() .. "added to tournament scoring table.")
-      util.ttttDebug("Player" .. ply:AccountID() .. "added to tournament scoring table.")
+      TOURNAMENT.players[ply:SteamID()] = ply.global_score
+      util.ttttDebug("Player" .. ply:Name() .. "added to tournament scoring table.")
   end
 end
 
@@ -74,7 +75,7 @@ function readScoresFromDisk()
 
     util.ttttDebug("TTTT DEBUG: Attempting to load data")
 
-    local data = file.Read("playerdata.json", "DATA")
+    local data = file.Read("tournamentplayerdata.json", "DATA")
     -- If the file  exists, read it, else give empty JSON to return as a table.
     if data then
       util.ttttDebug("TTTT DEBUG: Data file found... loading...")
@@ -116,11 +117,14 @@ function readScoresFromDisk()
   end
 
 
-  gameevent.Listen( "player_connect" )
-  hook.Add("player_connect", "AnnounceConnection", function( data )
-    local newply = Entity(data.index)
-    addToTournament(newply)
-    newply.global_score = TOURNAMENT.allScores.players[newply:SteamID()]
+  gameevent.Listen( "PlayerAuthed" )
+  hook.Add("PlayerAuthed", "PlayerConnectionHandler", function(ply, steamid, uniqueid)
+    util.ttttDebug("New Player Connected: " .. ply:Name())
+    if TOURNAMENT.players[ply:SteamID()] then
+      ply.global_score = TOURNAMENT.players[ply:SteamID()]
+    else
+      addToTournament(ply)
+    end
   end)
   
 function ttttDefineRoles()
@@ -179,3 +183,16 @@ hook.Add("Initialize", "TournamentServerInit", TOURNAMENT.serverInit)
 
 concommand.Add( "reruninit", TOURNAMENT.serverInit )
 
+concommand.Add( "tscore", function(ply, cmd, args)  
+	p = ents.FindByName(args[1])
+  for k,v in pairs(player.GetAll()) do
+    print(v.global_score.totalScore)
+  end
+end)
+
+concommand.Add( "tincscore", function(ply, cmd, args)  
+	p = ents.FindByName(args[1])
+  for k,v in pairs(player.GetAll()) do
+    v.global_score.totalScore = v.global_score.totalScore + 1
+  end
+end)
