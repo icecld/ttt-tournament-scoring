@@ -21,10 +21,18 @@ if not plymeta then Error("FAILED TO FIND PLAYER TABLE") return end
 --			"jesterKills": 0,
 --			"ownTeamKills": 0
 --		}
+function announcePoints()
+    for i, ply in ipairs( player.GetAll() ) do
+        for i, ply2 in ipairs( player.GetAll() ) do
+            ply:PrintMessage( HUD_PRINTTALK, ply2:GetName() .. ": " .. ply2.global_score.totalScore .. ", " .. ply2.global_score.roundsPlayed .. " rounds")
+        end
+	end
+end
 
 function plymeta:initGlobalScoreTable()
 
   self.global_score = {}
+  self.global_score["nick"] = self:GetName()
   self.global_score["roundsPlayed"] = 0
   self.global_score["roundsPlayedAsInnocent"] = 0
   self.global_score["roundsPlayedAsTraitor"] = 0

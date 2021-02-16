@@ -24,3 +24,11 @@ function util.ttttDebug(msg)
         end
     --end
 end
+
+function util.ttttGetPlayerFromName(playerName)
+  for i, ply in ipairs( player.GetAll() ) do
+		if ply:GetName() == playerName then
+      return ply
+    end
+	end
+end

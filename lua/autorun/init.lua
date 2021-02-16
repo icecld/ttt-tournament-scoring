@@ -50,6 +50,7 @@ include("player_ext_shd.lua") -- Shared
 include("individual_scoring.lua")
 
 -- Round end handling, team scores etc.
+include("round_start.lua")
 include("round_end.lua")
 
 -- If player not in tournament table then add player to the tournament table
@@ -57,7 +58,6 @@ function addToTournament(ply)
   util.ttttDebug("Add new player to the tournament score table " .. ply:Name())
   -- Check if that SteamID already in the allScores.players table
   if not TOURNAMENT.allScores.players[ply:SteamID()] then
-      print("poopybutt")
       -- WARNING players must have a valid global_score table before doing this. Make sure to create when
       -- joining the server.
       if not ply.global_score then
@@ -98,7 +98,6 @@ function readScoresFromDisk()
   
     -- Bring full table into memory
     TOURNAMENT.allScores = tableFromDisk
-    print(TOURNAMENT.allScores.players["STEAM_0:0:43907269"])
 
   
     -- Using Steam ID as Key in TOURNAMENT.allSocres will allow non-conflicting access
@@ -192,11 +191,11 @@ concommand.Add( "tscore", function(ply, cmd, args)
   end
 end)
 
-concommand.Add( "tincscore", function(ply, cmd, args)  
-	p = ents.FindByName(args[1])
-  for k,v in pairs(player.GetAll()) do
-    v.global_score.totalScore = v.global_score.totalScore + 1
-  end
+concommand.Add( "tawardscore", function(ply, cmd, args)
+	local awardedply = util.ttttGetPlayerFromName(args[1])
+  local score = args[2]
+  awardedply.global_score.totalScore = awardedply.global_score.totalScore + score
+  awardedply:PrintMessage( HUD_PRINTTALK, "You have been given " .. (score) .. " points by " .. ply:GetName() .. "!" )
 end)
 
 concommand.Add( "tsave", function(ply, cmd, args)  
@@ -205,6 +204,7 @@ end)
 
 concommand.Add( "test", function(ply, cmd, args)  
 	--print("First player has " .. TOURNAMENT.allScores.players[1].totalScore .. " points!")
-  print(TOURNAMENT.allScores.players["STEAM_0:0:43907269"].totalScore)
+  --print(TOURNAMENT.allScores.players["STEAM_0:0:43907269"].totalScore)
+  announcePoints()
   --writeScoresToDisk()
 end)
