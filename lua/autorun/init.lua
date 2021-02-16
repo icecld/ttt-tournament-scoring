@@ -50,8 +50,8 @@ include("player_ext_shd.lua") -- Shared
 include("individual_scoring.lua")
 
 -- Round end handling, team scores etc.
-include("round_start.lua")
 include("round_end.lua")
+include("round_start.lua")
 
 -- If player not in tournament table then add player to the tournament table
 function addToTournament(ply)
@@ -66,6 +66,11 @@ function addToTournament(ply)
       end
       TOURNAMENT.allScores.players[ply:SteamID()] = ply.global_score
       util.ttttDebug("Player " .. ply:Name() .. " added to tournament scoring table.")
+      if ply:Name() != TOURNAMENT.allScores.players[ply:SteamID()].nick then
+        local oldnick = TOURNAMENT.allScores.players[ply:SteamID()].nick
+        TOURNAMENT.allScores.players[ply:SteamID()].nick = ply:Name()
+        util.ttttDebug("Updated " .. ply:Name() .. "'s nickname due to mismatch: " .. oldnick .. " -> " .. ply:Name())
+      end
   end
 end
 
@@ -205,6 +210,7 @@ end)
 concommand.Add( "test", function(ply, cmd, args)  
 	--print("First player has " .. TOURNAMENT.allScores.players[1].totalScore .. " points!")
   --print(TOURNAMENT.allScores.players["STEAM_0:0:43907269"].totalScore)
-  announcePoints()
+  --announcePoints()
   --writeScoresToDisk()
+  roundStart()
 end)
