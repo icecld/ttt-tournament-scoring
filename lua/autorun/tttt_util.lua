@@ -20,7 +20,7 @@ end
 function util.ttttDebug(msg)
     --if SERVER then 
         if TOURNAMENT.DEBUG:GetBool() then 
-          print(msg)
+          print("TTTT DEBUG: " .. msg)
         end
     --end
 end

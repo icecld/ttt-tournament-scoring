@@ -155,7 +155,7 @@ function writeScoresToDisk()
     util.ttttDebug("TTTT DEBUG: Convert player data to JSON")
     local data = util.TableToJSON(constructScoresTableForExport()) -- Convert the player table to JSON
     
-    if not file.Exists("tournamentscoring") then
+    if not file.Exists("tournamentscoring", "DATA") then
         util.ttttDebug("TTTT DEBUG: Save file not found creating directory")
         file.CreateDir( "tournamentscoring" ) -- Create the directory if it doesn't exist
     end

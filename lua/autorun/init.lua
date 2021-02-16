@@ -36,10 +36,10 @@ WIN_KILLER = 6
 -- Define scoring table
 -- ttt already defines SCORE let's use TOURNAMENT to avoid confusion in namespace
 TOURNAMENT.allScores = {}
-TOURNAMENT.players = {}
---TOURNAMENT.allScores.meta = {totalRounds = 0}
+TOURNAMENT.allScores.players = {}
+TOURNAMENT.allScores.meta = {totalRounds = 0}
 TOURNAMENT.sessionRounds = 0
-TOURNAMENT.nonplayers = {}
+TOURNAMENT.nonPlayers = {}
 
 -- Messing with the player metatable following ttt
 -- In here we extend the metatable to track round performance
@@ -54,18 +54,18 @@ include("round_end.lua")
 
 -- If player not in tournament table then add player to the tournament table
 function addToTournament(ply)
-  print(ply:SteamID())
-  util.ttttDebug("TTTT DEBUG: Add new player to the tournament score table " .. ply:Name())
+  util.ttttDebug("Add new player to the tournament score table " .. ply:Name())
   -- Check if that SteamID already in the allScores.players table
-  if not TOURNAMENT.players[ply:SteamID()] then
+  if not TOURNAMENT.allScores.players[ply:SteamID()] then
+      print("poopybutt")
       -- WARNING players must have a valid global_score table before doing this. Make sure to create when
       -- joining the server.
       if not ply.global_score then
-        util.ttttDebug("TTTT DEBUG: " .. ply:Name() .. " is a noob. has no global score... initialising...")
+        util.ttttDebug("" .. ply:Name() .. " is a noob. has no global score... initialising...")
         ply:initGlobalScoreTable()
       end
-      TOURNAMENT.players[ply:SteamID()] = ply.global_score
-      util.ttttDebug("Player" .. ply:Name() .. "added to tournament scoring table.")
+      TOURNAMENT.allScores.players[ply:SteamID()] = ply.global_score
+      util.ttttDebug("Player " .. ply:Name() .. " added to tournament scoring table.")
   end
 end
 
@@ -73,20 +73,21 @@ end
 -- Read in the scores from the JSON file
 function readScoresFromDisk()
 
-    util.ttttDebug("TTTT DEBUG: Attempting to load data")
+    util.ttttDebug("Attempting to load data")
 
-    local data = file.Read("tournamentplayerdata.json", "DATA")
+    local loadedData = file.Read("tournamentscoring/playerdata.json", "DATA")
     -- If the file  exists, read it, else give empty JSON to return as a table.
-    if data then
-      util.ttttDebug("TTTT DEBUG: Data file found... loading...")
-      util.ttttDebug("TTTT DEBUG: Loaded saved data from disk")
+    if loadedData then
+      util.ttttDebug("Data file found... loading...")
+      util.ttttDebug("Loaded saved data from disk")
     else
-      print("No saved tournament data found. Initialising new data")
-      data = "{\"meta\":{\"totalRounds\":0}}"
+      util.ttttDebug("No saved tournament data found. Initialising new data")
+      --local data = "{\"meta\":{\"totalRounds\":0}}"
+      loadedData = "{\"meta\":{\"totalRounds\":0, \"totalPlayers\":0},\"players\":[]}"
     end
-  
-    local tableFromDisk = util.JSONToTable(data)
-  
+
+    local tableFromDisk = util.JSONToTable(loadedData)
+
     -- search table for the currently online players and recall their saved scores
     -- then make a list of the offline players so they don't get overwritten next time
   
@@ -97,22 +98,23 @@ function readScoresFromDisk()
   
     -- Bring full table into memory
     TOURNAMENT.allScores = tableFromDisk
+    print(TOURNAMENT.allScores.players["STEAM_0:0:43907269"])
 
   
     -- Using Steam ID as Key in TOURNAMENT.allSocres will allow non-conflicting access
     -- Add any new players to this score table, must call when player joins as well
     -- Also update player global score tables to match tournament score table
 
-    --util.ttttDebug("TTTT DEBUG: Add players to tournament scoring table")
-    --util.ttttDebug("TTTT DEBUG: Move data from disk scores to player metatable")
+    --util.ttttDebug("Add players to tournament scoring table")
+    --util.ttttDebug("Move data from disk scores to player metatable")
     --for k,v in pairs(player.getAll()) do
     --    addToTournament(v)
-    --    v.global_score = TOURNAMENT.allScores.players[v:SteamID()]
+    --    v.global_score = TOURNAMENT.allScores..players[v:SteamID()]
     --end
   
     
     -- We now have all of the file containing the score history stored in both PlyMeta.global_score tables
-    -- and also in TOURNAMENT.allScores.players[STEAM_ID], this isn't great but let's see what happens
+    -- and also in TOURNAMENT.allScores..players[STEAM_ID], this isn't great but let's see what happens
   
   end
 
@@ -120,8 +122,8 @@ function readScoresFromDisk()
   gameevent.Listen( "PlayerAuthed" )
   hook.Add("PlayerAuthed", "PlayerConnectionHandler", function(ply, steamid, uniqueid)
     util.ttttDebug("New Player Connected: " .. ply:Name())
-    if TOURNAMENT.players[ply:SteamID()] then
-      ply.global_score = TOURNAMENT.players[ply:SteamID()]
+    if TOURNAMENT.allScores.players[ply:SteamID()] then
+      ply.global_score = TOURNAMENT.allScores.players[ply:SteamID()]
     else
       addToTournament(ply)
     end
@@ -129,7 +131,7 @@ function readScoresFromDisk()
   
 function ttttDefineRoles()
 
-  util.ttttDebug("TTTT DEBUG: Defining roles because lua load order is nonsense")
+  util.ttttDebug("Defining roles because lua load order is nonsense")
   TOURNAMENT.TEAM_INNOCENT = {
       [ROLE_INNOCENT] = true,
       [ROLE_DETECTIVE] = true,
@@ -168,12 +170,12 @@ end
   -- Functions to run when the server begins (GM:Initialize hook), namespacing this thing
 function TOURNAMENT.serverInit()
     
-    util.ttttDebug("TTTT DEBUG: Server initialisation...")
-    util.ttttDebug("TTTT DEBUG: TTT Tournament Scoring is loaded and in debug") 
+    util.ttttDebug("Server initialisation...")
+    util.ttttDebug("TTT Tournament Scoring is loaded and in debug") 
     ttttDefineRoles()
     
     -- Read Scores table from disk
-    util.ttttDebug("TTTT DEBUG: Attempt to load data")
+    util.ttttDebug("Attempt to load data")
     readScoresFromDisk()
     
 end
@@ -195,4 +197,14 @@ concommand.Add( "tincscore", function(ply, cmd, args)
   for k,v in pairs(player.GetAll()) do
     v.global_score.totalScore = v.global_score.totalScore + 1
   end
+end)
+
+concommand.Add( "tsave", function(ply, cmd, args)  
+  writeScoresToDisk()
+end)
+
+concommand.Add( "test", function(ply, cmd, args)  
+	--print("First player has " .. TOURNAMENT.allScores.players[1].totalScore .. " points!")
+  print(TOURNAMENT.allScores.players["STEAM_0:0:43907269"].totalScore)
+  --writeScoresToDisk()
 end)
