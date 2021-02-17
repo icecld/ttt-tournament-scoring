@@ -54,7 +54,7 @@ include("round_end.lua")
 include("round_start.lua")
 
 -- If player not in tournament table then add player to the tournament table
-function addToTournament(ply)
+function TOURNAMENT.AddToTournament(ply)
   util.ttttDebug("Add new player to the tournament score table " .. ply:Name())
   -- Check if that SteamID already in the allScores.players table
   if not TOURNAMENT.allScores.players[ply:SteamID()] then
@@ -76,7 +76,7 @@ end
 
 -- Maybe we move all the save load stuff to its own file...
 -- Read in the scores from the JSON file
-function readScoresFromDisk()
+function TOURNAMENT.ReadScoresFromDisk()
 
     util.ttttDebug("Attempting to load data")
 
@@ -112,7 +112,7 @@ function readScoresFromDisk()
     --util.ttttDebug("Add players to tournament scoring table")
     --util.ttttDebug("Move data from disk scores to player metatable")
     --for k,v in pairs(player.getAll()) do
-    --    addToTournament(v)
+    --    TOURNAMENT.AddToTournament(v)
     --    v.global_score = TOURNAMENT.allScores..players[v:SteamID()]
     --end
   
@@ -129,7 +129,7 @@ function readScoresFromDisk()
     if TOURNAMENT.allScores.players[ply:SteamID()] then
       ply.global_score = TOURNAMENT.allScores.players[ply:SteamID()]
     else
-      addToTournament(ply)
+      TOURNAMENT.AddToTournament(ply)
     end
   end)
   
@@ -180,7 +180,7 @@ function TOURNAMENT.serverInit()
     
     -- Read Scores table from disk
     util.ttttDebug("Attempt to load data")
-    readScoresFromDisk()
+    TOURNAMENT.ReadScoresFromDisk()
     
 end
 

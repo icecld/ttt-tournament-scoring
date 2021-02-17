@@ -1,7 +1,7 @@
 -- Handle all the round end stuff in here, scoring plus saving
 
 -- Calculate baseline bonus for members of winning team
-function calcTeamWinBonus(wintype)
+function TOURNAMENT.CalcTeamWinBonus(wintype)
 
     util.ttttDebug("TTTT DEBUG: Computing win bonuses")
 
@@ -19,9 +19,9 @@ function calcTeamWinBonus(wintype)
         -- Traitors get (num_killed)/(num_traitor-num_dead_traitor)
 
         util.ttttDebug("TTTT DEBUG: Traitor win computation")
-        num_killed = 0
-        num_traitor = 0
-        num_dead_traitor = 0
+        local num_killed = 0
+        local num_traitor = 0
+        local num_dead_traitor = 0
         -- For all players get required numbers, this should be replaced
         -- with online tracking of these values
         for k,v in pairs(player.GetAll()) do
@@ -35,7 +35,7 @@ function calcTeamWinBonus(wintype)
                 end
             else
                 -- If player is dead not traitor then increment
-                num_killed = num_killed + bool2num(v:Alive())
+                num_killed = num_killed + util.bool2num(v:Alive())
             end
         end
 
@@ -45,7 +45,7 @@ function calcTeamWinBonus(wintype)
     elseif wintype == WIN_KILLER then
         util.ttttDebug("TTTT DEBUG: Killer win computation")
         -- Killer kills everyone, bonus = 1 per kill
-        win_bonus = self.round_score["innocentKills"] + self.round_score["traitorKills"]
+        win_bonus = self.round_score["innocentKills"] + self.round_score["traitorKills"]        -- shouldn't be self? Fix.
     elseif wintype == WIN_JESTER then
         util.ttttDebug("TTTT DEBUG: Jester win computation")
         -- Jester jests everyone, bonus = 1 per player on server
@@ -60,12 +60,12 @@ end
 
 
 -- Hand out scores at end of round for team performance
-function roundEndTeamScoring(win_type)
+function TOURNAMENT.RoundEndTeamScoring(win_type)
 
     util.ttttDebug("TTTT DEBUG: Round end compute scoring and assign")
 
     -- Winning team base bonus
-    local win_bonus = calcTeamWinBonus(win_type)
+    local win_bonus = TOURNAMENT.CalcTeamWinBonus(win_type)
 
     -- For each player check if their team won and allocate points
     for k,v in pairs(player.GetAll()) do
@@ -84,7 +84,7 @@ function roundEndTeamScoring(win_type)
 
             util.ttttDebug("TTTT DEBUG: Score modifier for" .. v:Nick() .. score_modifier)
 
-            ply_score = win_bonus*score_modifier
+            local ply_score = win_bonus*score_modifier
 
             -- Give win bonus to player
             util.ttttDebug("TTTT DEBUG: " .. v:Nick() .. " awarded " .. ply_score)
@@ -95,15 +95,16 @@ function roundEndTeamScoring(win_type)
 
 end
 
-function roundEndIncrementCounters()
+-- Increment Round Counters For Everyone and The Server
+function TOURNAMENT.RoundEndIncrementCounters()
 
     util.ttttDebug("TTTT DEBUG: Round end increment all counters")
 
     if SERVER then
 
-    --increment overall round counters
-    TOURNAMENT.allScores.meta.totalRounds = TOURNAMENT.allScores.meta.totalRounds + 1
-    TOURNAMENT.sessionRounds = TOURNAMENT.sessionRounds + 1
+        --increment overall round counters
+        TOURNAMENT.allScores.meta.totalRounds = TOURNAMENT.allScores.meta.totalRounds + 1
+        TOURNAMENT.sessionRounds = TOURNAMENT.sessionRounds + 1
 
     end
 
@@ -135,54 +136,48 @@ function roundEndIncrementCounters()
 
 end
 
-function constructScoresTableForExport()
-    -- Construct the table from the JSON file
-
-    -- We need to transfer every player's global_score table back into the TOURNAMENT.allScores
-    -- all this memory juggling will get tiring maybe we should get rid of global_score and do it all
-    -- in TOURNAMENT.allScores.players
-    for k,v in pairs(player.GetAll()) do
-        TOURNAMENT.allScores.players[v:SteamID()] = v.global_score
-    end
-
-    -- We are already tracking metadata in TOURNAMENT.allScores.meta
-    return TOURNAMENT.allScores -- return the table in a format that's nice for TableToJSON
-end
 
 -- Write the scores to the JSON file
-function writeScoresToDisk()
+function TOURNAMENT.WriteScoresToDisk()
 
     util.ttttDebug("TTTT DEBUG: Convert player data to JSON")
-    local data = util.TableToJSON(constructScoresTableForExport()) -- Convert the player table to JSON
-    
+    -- Update TOURNAMENT.allScores with the current data stored in the player entities.
+    for k,ply in pairs(player.GetAll()) do
+        TOURNAMENT.allScores.players[ply:SteamID()] = ply.global_score
+    end
+
+    -- Convert the player table to JSON
+    util.ttttDebug("TTTT DEBUG: Convert player data to JSON")
+    local JSONdata = util.TableToJSON(TOURNAMENT.allScores)
+
     if not file.Exists("tournamentscoring", "DATA") then
         util.ttttDebug("TTTT DEBUG: Save file not found creating directory")
         file.CreateDir( "tournamentscoring" ) -- Create the directory if it doesn't exist
     end
 
     util.ttttDebug("TTTT DEBUG: Write out player scores")
-    file.Write( "tournamentscoring/playerdata.json", data) -- Write the data to the JSON file
+    file.Write( "tournamentscoring/playerdata.json", JSONdata) -- Write the data to the JSON file
 end
 
 -- Hook function for applying scores at end of round accepts win type as vararg input
-function roundEndScoring(win_type)
+function TOURNAMENT.RoundEndScoring(win_type)
   -- no need to read because all data already in TOURNAMENT.allScores table
   -- at server start must call readScoresFromDisk()
   --readScoresFromDisk()
   util.ttttDebug("TTTT DEBUG: Running round end scoring")
-  roundEndIncrementCounters()
+  TOURNAMENT.RoundEndIncrementCounters()
 
   -- *functions to hand out scores to go here*
   util.ttttDebug("TTTT DEBUG: Assigning team scores for round end")
-  roundEndTeamScoring(win_type)
+  TOURNAMENT.RoundEndTeamScoring(win_type)
   --roundEndIndividualScoring() -- not implemented
   --rountEndVoteScoring()       -- not implemented
 
   util.ttttDebug("TTTT DEBUG: Write scores to disk")
-  writeScoresToDisk()
+  TOURNAMENT.WriteScoresToDisk()
 end
 
 
-hook.Add("TTTEndRound", "TournamentRoundEndScoring", roundEndScoring)
+hook.Add("TTTEndRound", "TournamentRoundEndScoring", TOURNAMENT.RoundEndScoring)
 
 
