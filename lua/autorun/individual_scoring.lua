@@ -172,4 +172,11 @@
 
             victim:incSuicides()
         end
+        if inflictor:IsWeapon() then
+            if attacker.weapons[inflictor:GetPrintName()] ~= nil then
+                attacker.weapons[inflictor:GetPrintName()] = attacker.weapons[inflictor:GetPrintName()] + 1
+            else
+                attacker.weapons[inflictor:GetPrintName()] = 1
+            end
+        end
     end)

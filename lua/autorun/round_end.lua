@@ -145,8 +145,16 @@ function TOURNAMENT:transferRoundScoresToGlobalScores()
         local sharedAttributres = {"totalScore", "traitorKills", "innocentKills", "killerKills", "jesterKills", "ownTeamKills", "suicides"}
         for i,ply in pairs(player.GetAll()) do
             for j,attr in pairs(sharedAttributres) do
-                util.ttttDebug(ply:Nick() .. ": " .. attr .. ":   " .. TOURNAMENT.allScores.players[ply:SteamID()][attr] .. " + " .. ply.round_score[attr])
+                --util.ttttDebug(ply:Nick() .. ": " .. attr .. ":   " .. TOURNAMENT.allScores.players[ply:SteamID()][attr] .. " + " .. ply.round_score[attr])
                 TOURNAMENT.allScores.players[ply:SteamID()][attr] = (TOURNAMENT.allScores.players[ply:SteamID()][attr] + ply.round_score[attr])
+            end
+            for j,weap in pairs(ply.round_score.weapons) do
+                --util.ttttDebug(ply:Nick() .. ": Add " .. ply.round_score.weapons[weap] .. " kills with the " .. weap)
+                if TOURNAMENT.allScores.players[ply:SteamID()].weapons[weap] ~= nil then
+                    TOURNAMENT.allScores.players[ply:SteamID()].weapons[weap] = TOURNAMENT.allScores.players[ply:SteamID()].weapons[weap] + ply.round_score.weapons[weap]
+                else
+                    TOURNAMENT.allScores.players[ply:SteamID()].weapons[weap] = ply.round_score.weapons[weap]
+                end
             end
         end
     end
