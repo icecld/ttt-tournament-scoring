@@ -3,10 +3,19 @@
 TOURNAMENT = {}
 TOURNAMENT.DEBUG = CreateConVar("tttt_debug",1,FCVAR_NONE,"Debug TTT Tournament Scoring",0,1)
 
-
 -- Extra Utils
 include("tttt_util.lua")
 
+-- Define scoring table
+-- ttt already defines SCORE let's use TOURNAMENT to avoid confusion in namespace
+TOURNAMENT.allScores = {}
+TOURNAMENT.allScores.players = {}
+TOURNAMENT.allScores.meta = {totalRounds = 0}
+TOURNAMENT.sessionRounds = 0
+TOURNAMENT.nonPlayers = {}
+TOURNAMENT.BaseScore = 10
+TOURNAMENT.BoringWeapons = {}
+TOURNAMENT.FirstInit = false
 
 -- Player roles
 ROLE_INNOCENT = 0
@@ -31,15 +40,38 @@ WIN_TIMELIMIT = 4
 WIN_JESTER = 5
 WIN_KILLER = 6
 
+util.ttttDebug("Defining roles because lua load order is nonsense")
+TOURNAMENT.TEAM_INNOCENT = {
+    [ROLE_INNOCENT] = true,
+    [ROLE_DETECTIVE] = true,
+    [ROLE_MERCENARY] = true,
+    [ROLE_PHANTOM] = true,
+    [ROLE_GLITCH] = true
+}
+TOURNAMENT.TEAM_TRAITOR = {
+    [ROLE_TRAITOR] = true,
+    [ROLE_VAMPIRE] = true,
+    [ROLE_HYPNOTIST] = true,
+    [ROLE_ZOMBIE] = true,
+    [ROLE_ASSASSIN] = true
+}
+TOURNAMENT.TEAM_JESTER = {
+    [ROLE_JESTER] = true,
+    [ROLE_SWAPPER] = true
+}
 
+-- Table for tracking what win conditions mean for
+-- different roles in the game
+TOURNAMENT.winComp = {
+  [WIN_INNOCENT] = TOURNAMENT.TEAM_INNOCENT,
+  [WIN_TRAITOR] = TOURNAMENT.TEAM_TRAITOR,
+  [WIN_JESTER] = TOURNAMENT.TEAM_JESTER,
+  [WIN_KILLER] = {
+      [ROLE_KILLER] = true
+  },
+  [WIN_TIMELIMIT] = TOURNAMENT.TEAM_INNOCENT
+}
 
--- Define scoring table
--- ttt already defines SCORE let's use TOURNAMENT to avoid confusion in namespace
-TOURNAMENT.allScores = {}
-TOURNAMENT.allScores.players = {}
-TOURNAMENT.allScores.meta = {totalRounds = 0}
-TOURNAMENT.sessionRounds = 0
-TOURNAMENT.nonPlayers = {}
 
 -- Messing with the player metatable following ttt
 -- In here we extend the metatable to track round performance
@@ -53,8 +85,10 @@ include("individual_scoring.lua")
 include("round_end.lua")
 include("round_start.lua")
 
+
+
 -- If player not in tournament table then add player to the tournament table
-function TOURNAMENT.AddToTournament(ply)
+function TOURNAMENT:AddToTournament(ply)
   util.ttttDebug("Add new player to the tournament score table " .. ply:Name())
   -- Check if that SteamID already in the allScores.players table
   if not TOURNAMENT.allScores.players[ply:SteamID()] then
@@ -66,7 +100,7 @@ function TOURNAMENT.AddToTournament(ply)
       end
       TOURNAMENT.allScores.players[ply:SteamID()] = ply.global_score
       util.ttttDebug("Player " .. ply:Name() .. " added to tournament scoring table.")
-      if ply:Name() != TOURNAMENT.allScores.players[ply:SteamID()].nick then
+      if ply:Name() ~= TOURNAMENT.allScores.players[ply:SteamID()].nick then
         local oldnick = TOURNAMENT.allScores.players[ply:SteamID()].nick
         TOURNAMENT.allScores.players[ply:SteamID()].nick = ply:Name()
         util.ttttDebug("Updated " .. ply:Name() .. "'s nickname due to mismatch: " .. oldnick .. " -> " .. ply:Name())
@@ -76,7 +110,7 @@ end
 
 -- Maybe we move all the save load stuff to its own file...
 -- Read in the scores from the JSON file
-function TOURNAMENT.ReadScoresFromDisk()
+function TOURNAMENT:ReadScoresFromDisk()
 
     util.ttttDebug("Attempting to load data")
 
@@ -92,6 +126,8 @@ function TOURNAMENT.ReadScoresFromDisk()
     end
 
     local tableFromDisk = util.JSONToTable(loadedData)
+
+    PrintTable(tableFromDisk)
 
     -- search table for the currently online players and recall their saved scores
     -- then make a list of the offline players so they don't get overwritten next time
@@ -122,66 +158,38 @@ function TOURNAMENT.ReadScoresFromDisk()
   
   end
 
-
-  gameevent.Listen( "PlayerAuthed" )
-  hook.Add("PlayerAuthed", "PlayerConnectionHandler", function(ply, steamid, uniqueid)
+gameevent.Listen( "PlayerAuthed" )
+hook.Add("PlayerAuthed", "PlayerConnectionHandler", function(ply, steamid, uniqueid)
+  if SERVER then
     util.ttttDebug("New Player Connected: " .. ply:Name())
+    ply:initGlobalScoreTable()
+    ply:initSessionScoreTable()
+    ply:initRoundScoreTable()
     if TOURNAMENT.allScores.players[ply:SteamID()] then
       ply.global_score = TOURNAMENT.allScores.players[ply:SteamID()]
     else
-      TOURNAMENT.AddToTournament(ply)
+      TOURNAMENT:AddToTournament(ply)
     end
-  end)
-  
-function ttttDefineRoles()
+  end
+end)
 
-  util.ttttDebug("Defining roles because lua load order is nonsense")
-  TOURNAMENT.TEAM_INNOCENT = {
-      [ROLE_INNOCENT] = true,
-      [ROLE_DETECTIVE] = true,
-      [ROLE_MERCENARY] = true,
-      [ROLE_PHANTOM] = true,
-      [ROLE_GLITCH] = true
-  }
 
-  TOURNAMENT.TEAM_TRAITOR = {
-      [ROLE_TRAITOR] = true,
-      [ROLE_VAMPIRE] = true,
-      [ROLE_HYPNOTIST] = true,
-      [ROLE_ZOMBIE] = true,
-      [ROLE_ASSASSIN] = true
-  }
-
-  TOURNAMENT.TEAM_JESTER = {
-      [ROLE_JESTER] = true,
-      [ROLE_SWAPPER] = true
-  }
-
-  -- Table for tracking what win conditions mean for
-  -- different roles in the game
-  TOURNAMENT.winComp = {
-    [WIN_INNOCENT] = TOURNAMENT.TEAM_INNOCENT,
-    [WIN_TRAITOR] = TOURNAMENT.TEAM_TRAITOR,
-    [WIN_JESTER] = TOURNAMENT.TEAM_JESTER,
-    [WIN_KILLER] = {
-        [ROLE_KILLER] = true
-    },
-    [WIN_TIMELIMIT] = TOURNAMENT.TEAM_INNOCENT
-  }
-
-end
   
   -- Functions to run when the server begins (GM:Initialize hook), namespacing this thing
-function TOURNAMENT.serverInit()
-    
+function TOURNAMENT:serverInit()
+
+  if SERVER then
+
     util.ttttDebug("Server initialisation...")
-    util.ttttDebug("TTT Tournament Scoring is loaded and in debug") 
-    ttttDefineRoles()
-    
+    util.ttttDebug("TTT Tournament Scoring is loaded and in debug")
+    --ttttDefineRoles()
+
     -- Read Scores table from disk
     util.ttttDebug("Attempt to load data")
-    TOURNAMENT.ReadScoresFromDisk()
-    
+    TOURNAMENT:ReadScoresFromDisk()
+    TOURNAMENT.FirstInit = true
+  end
+
 end
 
   -- Add serverInit function to gamemode initialisation
@@ -203,8 +211,23 @@ concommand.Add( "tawardscore", function(ply, cmd, args)
   awardedply:PrintMessage( HUD_PRINTTALK, "You have been given " .. (score) .. " points by " .. ply:GetName() .. "!" )
 end)
 
+concommand.Add( "printplayertable", function(ply, cmd, args)
+	local ply = util.ttttGetPlayerFromName(args[1])
+  PrintTable(ply.round_score)
+end)
+
 concommand.Add( "tsave", function(ply, cmd, args)  
-  writeScoresToDisk()
+    TOURNAMENT.WriteScoresToDisk()
+end)
+
+concommand.Add( "tprintglobaltable", function(ply, cmd, args)  
+  PrintTable(TOURNAMENT)
+end)
+
+concommand.Add( "tscoreboard", function(ply, cmd, args)  
+  for k,ply in pairs(player.GetAll()) do
+    ply:reportRoundScore()
+  end
 end)
 
 concommand.Add( "test", function(ply, cmd, args)  
@@ -212,5 +235,5 @@ concommand.Add( "test", function(ply, cmd, args)
   --print(TOURNAMENT.allScores.players["STEAM_0:0:43907269"].totalScore)
   --announcePoints()
   --writeScoresToDisk()
-  roundStart()
+  TOURNAMENT.FirstInit = true
 end)

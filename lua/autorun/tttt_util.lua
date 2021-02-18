@@ -7,6 +7,15 @@ function util.bool2num(val)
     return (val and 1 or 0)
 end
 
+function util.strInTable(tab, str)
+  for i,v in ipairs(tab) do
+    if v == str then
+      return true
+    end
+  end
+  return false
+end
+
 -- Count the key/val pairs in a table. Why is this not a basic funciton of LUA? Why?
 function util.tableLen(tab)
   local n
