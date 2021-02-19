@@ -90,22 +90,13 @@ include("round_start.lua")
 -- If player not in tournament table then add player to the tournament table
 function TOURNAMENT:AddToTournament(ply)
   util.ttttDebug("Add new player to the tournament score table " .. ply:Name())
-  -- Check if that SteamID already in the allScores.players table
-  if not TOURNAMENT.allScores.players[ply:SteamID()] then
       -- WARNING players must have a valid global_score table before doing this. Make sure to create when
       -- joining the server.
-      if not ply.global_score then
-        util.ttttDebug("" .. ply:Name() .. " is a noob. has no global score... initialising...")
-        ply:initGlobalScoreTable()
-      end
+      util.ttttDebug("" .. ply:Name() .. " is a noob. has no global score... initialising...")
+
       TOURNAMENT.allScores.players[ply:SteamID()] = ply.global_score
-      util.ttttDebug("Player " .. ply:Name() .. " added to tournament scoring table.")
-      if ply:Name() ~= TOURNAMENT.allScores.players[ply:SteamID()].nick then
-        local oldnick = TOURNAMENT.allScores.players[ply:SteamID()].nick
-        TOURNAMENT.allScores.players[ply:SteamID()].nick = ply:Name()
-        util.ttttDebug("Updated " .. ply:Name() .. "'s nickname due to mismatch: " .. oldnick .. " -> " .. ply:Name())
-      end
-  end
+
+      util.ttttDebug("Player " .. ply:Name() .. " added to tournament scoring table. Their data will be saved a the end of the next round.")
 end
 
 -- Maybe we move all the save load stuff to its own file...
@@ -165,9 +156,19 @@ hook.Add("PlayerAuthed", "PlayerConnectionHandler", function(ply, steamid, uniqu
     ply:initGlobalScoreTable()
     ply:initSessionScoreTable()
     ply:initRoundScoreTable()
-    if TOURNAMENT.allScores.players[ply:SteamID()] then
+    if TOURNAMENT.allScores.players[ply:SteamID()] ~= nil then
       ply.global_score = TOURNAMENT.allScores.players[ply:SteamID()]
+
+      -- Check to see if they changed their nickname and update if needed
+      if ply:Name() ~= TOURNAMENT.allScores.players[ply:SteamID()].nick then
+
+        local oldnick = TOURNAMENT.allScores.players[ply:SteamID()].nick
+        TOURNAMENT.allScores.players[ply:SteamID()].nick = ply:Name()
+        util.ttttDebug("Updated " .. ply:Name() .. "'s nickname due to mismatch: " .. oldnick .. " -> " .. ply:Name())
+
+      end
     else
+      -- First time we've seen this player - add the player to the tournament
       TOURNAMENT:AddToTournament(ply)
     end
   end

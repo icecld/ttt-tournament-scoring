@@ -32,7 +32,7 @@ end
 
 -- Table for storing all-time data
 function plymeta:initGlobalScoreTable()
-    util.ttttDebug("Initialise player global_score table for")-- .. self.Name())
+    util.ttttDebug("Initialise player global_score table for" .. self:Name())
     self.global_score = {}
     self.global_score.nick = self:GetName()
     self.global_score.roundsPlayed = 0
@@ -51,11 +51,12 @@ function plymeta:initGlobalScoreTable()
     self.global_score.suicides = 0
 
     self.global_score.weapons = {}
+    self.global_score.favouriteWeapon = ""
 end
 
 -- Table for storing session data
 function plymeta:initSessionScoreTable()
-    util.ttttDebug("Initialise player session_score table for ") --.. self.Name())
+    util.ttttDebug("Initialise player session_score table for ".. self:Name())
     self.session_score = {}
     self.session_score.roundsPlayed = 0
     self.session_score.roundsPlayedAsInnocent = 0
@@ -78,7 +79,7 @@ end
 
 --Table for storing round data
 function plymeta:initRoundScoreTable()
-    util.ttttDebug("Initialise player round_score table for ")-- .. self.Name())
+    util.ttttDebug("Initialise player round_score table for " .. self:Name())
     self.round_score = {}
     self.round_score.log = {}
 
@@ -142,6 +143,7 @@ end
 -- Save to a message to a log that will be sent to the player at the end of the round
 -- (to prevent people knowing information they shouldn't know before the end of the round)
 function plymeta:logScore(msg)
+    util.ttttDebug("SCORE LOG: " .. self:GetName() .. ": " .. msg)
     table.insert(self.round_score.log, msg)
 end
 

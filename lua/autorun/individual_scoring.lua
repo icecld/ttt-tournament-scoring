@@ -30,15 +30,12 @@
     end)
 
     -- Player dies, calculate scores to give to the attackers and victims.
-    gameevent.Listen("PlayerDeath")
-    hook.Add("PlayerDeath", "PlayerDeath", function(victim, inflictor, attacker)
-        print(attacker)
-        if not attacker:IsWorld() then
+    gameevent.Listen("DoPlayerDeath")
+    hook.Add("DoPlayerDeath", "PlayerDeath", function(victim, attacker, dmginfo)
+        inflictor = dmginfo:GetAttacker():GetActiveWeapon()
+        if attacker:IsPlayer() and not attacker:IsWorld() then
             if TOURNAMENT.TEAM_TRAITOR[victim:GetRole()] and TOURNAMENT.TEAM_INNOCENT[attacker:GetRole()] then
                 -- Victim is a traitor, attacker is innocent]
-
-                -- Increment round kill counter for the innocent
-                attacker:incTraitorKills()
 
                 -- Dock points from victim
                 victim:awardScore(BaseScore * -1)
@@ -54,24 +51,32 @@
                     attacker:logScore((BaseScore * 0.5) .. " points for a killing spree" )
                 end
 
+                -- Increment round kill counter for the innocent
+                attacker:incTraitorKills()                
+
                 -- If it's the golden deagle, award a bonus
                 if inflictor:GetClass() == "weapon_powerdeagle" then
                     attacker:awardScore(BaseScore * 1)
                     attacker:logScore((BaseScore * 1) .. " points for good detective work" )
                 end
-
-                -- If it's an interesting weapon, award a bonus
-                if inflictor:IsWeapon() and not util.strInTable(BoringWeapons, inflictor:GetClass()) then
-                    attacker:awardScore(BaseScore * 1)
-                    attacker:logScore((BaseScore * 1) .. " points for a kill using the " .. inflictor:GetPrintName())
+                
+                print(inflictor:GetClass() .. ' vs ' .. attacker.global_score.favouriteWeapon)
+                if inflictor:IsWeapon() then
+                    -- If it's an interesting weapon, award a bonus
+                    if not util.strInTable(BoringWeapons, inflictor:GetClass()) then
+                        attacker:awardScore(BaseScore * 1)
+                        attacker:logScore((BaseScore * 1) .. " points for a kill using an interesting weapon")
+                    end
+                    -- If it's a favourite weapon, dock points
+                    if inflictor:GetClass() == attacker.global_score.favouriteWeapon then
+                        attacker:awardScore(BaseScore * -0.2)
+                        attacker:logScore((BaseScore * 0.2) .. " points deducted for a kill using your favourite weapon")
+                    end
                 end
 
 
             elseif TOURNAMENT.TEAM_INNOCENT[victim:GetRole()] and TOURNAMENT.TEAM_TRAITOR[attacker:GetRole()] then
                 -- Victim is innocent, attacker is a traitor
-
-                -- Increment round kill counter for the traitor
-                attacker:incInnocentKills()
 
                 -- Dock points from victim
                 victim:awardScore(BaseScore * -1)
@@ -87,10 +92,22 @@
                     attacker:logScore((BaseScore * 0.5) .. " points for a killing spree" )
                 end
 
+                -- Increment round kill counter for the traitor
+                attacker:incInnocentKills()
+
                 -- If it's an interesting weapon award a bonus
-                if inflictor:IsWeapon() and not util.strInTable(BoringWeapons, inflictor:GetClass()) then
-                    attacker:awardScore(BaseScore * 1)
-                    attacker:logScore((BaseScore * 1) .. " points for a kill using the " .. inflictor:GetPrintName())
+                print(inflictor:GetClass() .. ' vs ' .. attacker.global_score.favouriteWeapon)
+                if inflictor:IsWeapon() then
+                    -- If it's an interesting weapon, award a bonus
+                    if not util.strInTable(BoringWeapons, inflictor:GetClass()) then
+                        attacker:awardScore(BaseScore * 1)
+                        attacker:logScore((BaseScore * 1) .. " points for a kill using an interesting weapon")
+                    end
+                    -- If it's a favourite weapon, dock points
+                    if inflictor:GetClass() == attacker.global_score.favouriteWeapon then
+                        attacker:awardScore(BaseScore * -0.2)
+                        attacker:logScore((BaseScore * 0.2) .. " points deducted for a kill using your favourite weapon")
+                    end
                 end
 
 
@@ -109,20 +126,16 @@
             elseif TOURNAMENT.TEAM_INNOCENT[victim:GetRole()] and TOURNAMENT.TEAM_INNOCENT[attacker:GetRole()] then
                 -- Victim is a innocent, attacker is also innocent
 
-                -- Increment round kill counter for the innocent, and own team kills counter
-                attacker:incInnocentKills()
-                attacker:incOwnTeamKills()
-
                 -- Dock points for team kill
                 attacker:awardScore(BaseScore * -2)
                 attacker:logScore((BaseScore * -2) .. " points for being an idiot and killing your team mate" )
 
+                -- Increment round kill counter for the innocent, and own team kills counter
+                attacker:incInnocentKills()
+                attacker:incOwnTeamKills()
 
             elseif victim:GetRole() == ROLE_KILLER then
                 -- Victim is a killer, attacker is anything else
-
-                -- Increment round kill counter for the attacker
-                attacker:incKillerKills()
 
                 -- Award points to attacker
                 attacker:awardScore(BaseScore * 2)
@@ -132,12 +145,11 @@
                 victim:awardScore(BaseScore * -1)
                 victim:logScore((BaseScore * -1) .. " points for getting killed as the killer" )
 
+                -- Increment round kill counter for the attacker
+                attacker:incKillerKills()
 
             elseif (attacker:GetRole() == ROLE_KILLER) and not TOURNAMENT.TEAM_JESTER[victim:GetRole()] then
                 -- Attacker is a killer, victim is anything else, except team jester
-
-                -- Increment round kill counter for the killer
-                attacker:incKillCountersByRole(victim:GetRole())
 
                 -- Award points to the killer
                 attacker:awardScore(BaseScore * 1)
@@ -147,6 +159,8 @@
                 victim:awardScore(BaseScore * -1)
                 victim:logScore((BaseScore * -1) .. " points for getting killed by the killer" )
 
+                -- Increment round kill counter for the killer
+                attacker:incKillCountersByRole(victim:GetRole())
 
             elseif TOURNAMENT.TEAM_JESTER[victim:GetRole()] then
                 -- Victim is a jester or a swapper
@@ -173,10 +187,10 @@
             victim:incSuicides()
         end
         if inflictor:IsWeapon() then
-            if attacker.weapons[inflictor:GetPrintName()] ~= nil then
-                attacker.weapons[inflictor:GetPrintName()] = attacker.weapons[inflictor:GetPrintName()] + 1
+            if attacker.round_score.weapons[inflictor:GetClass()] ~= nil then
+                attacker.round_score.weapons[inflictor:GetClass()] = attacker.round_score.weapons[inflictor:GetClass()] + 1
             else
-                attacker.weapons[inflictor:GetPrintName()] = 1
+                attacker.round_score.weapons[inflictor:GetClass()] = 1
             end
         end
     end)
