@@ -1,6 +1,7 @@
 -- MAIN FILE - ttt-tournament-scoring
 
 TOURNAMENT = {}
+TOURNAMENT.version = 1.0
 TOURNAMENT.DEBUG = CreateConVar("tttt_debug",1,FCVAR_NONE,"Debug TTT Tournament Scoring",0,1)
 
 -- Extra Utils
@@ -16,6 +17,7 @@ TOURNAMENT.nonPlayers = {}
 TOURNAMENT.BaseScore = 10
 TOURNAMENT.BoringWeapons = {}
 TOURNAMENT.FirstInit = false
+TOURNAMENT.sharedAttributes = {"totalScore", "traitorKills", "innocentKills", "killerKills", "jesterKills", "ownTeamKills", "suicides", "totalKills", "totalDeaths"}
 
 -- Player roles
 ROLE_INNOCENT = 0
@@ -86,7 +88,6 @@ include("round_end.lua")
 include("round_start.lua")
 
 
-
 -- If player not in tournament table then add player to the tournament table
 function TOURNAMENT:AddToTournament(ply)
   util.ttttDebug("Add new player to the tournament score table " .. ply:Name())
@@ -140,7 +141,7 @@ hook.Add("PlayerAuthed", "PlayerConnectionHandler", function(ply, steamid, uniqu
         util.ttttConsoleMsg("Updated " .. ply:Name() .. "'s nickname due to mismatch: " .. oldnick .. " -> " .. ply:Name())
 
       end
-      util.ttttAnnounce("Welcome back, " .. ply:Name() .. ". " .. ply:funfact())
+      util.ttttAnnounce("Welcome back, " .. ply:Name() .. ". Fun Fact: " .. ply:funfact())
     else
       -- First time we've seen this player - add the player to the tournament
       TOURNAMENT:AddToTournament(ply)
@@ -155,7 +156,7 @@ function TOURNAMENT:serverInit()
 
   if SERVER then
 
-    util.ttttConsoleMsg("A probably buggy mod by icecold.trashcan & trogdip")
+    util.ttttConsoleMsg("A probably buggy mod by icecold.trashcan & trogdip, version " .. TOURNAMENT.version)
     util.ttttDebug("TTT Tournament Scoring is loaded and in debug")
     --ttttDefineRoles()
 
@@ -168,6 +169,23 @@ end
 
   -- Add serverInit function to gamemode initialisation
 hook.Add("Initialize", "TournamentServerInit", TOURNAMENT.serverInit)
+
+function TOURNAMENT:allTimeScoreboard()
+  local rankedPlayers = {}
+  
+  for sid, player in pairs(TOURNAMENT.allScores.players) do
+    table.insert(rankedPlayers, {id = sid, score = player.totalScore})
+  end
+  
+  table.sort(rankedPlayers, function(a,b) return a.score > b.score end)
+  for k,ply in pairs(player.GetAll()) do
+    ply:PrintMessage( HUD_PRINTTALK, ("ALL TIME SCORES"))
+    for i, rply in ipairs(rankedPlayers) do
+      ply:PrintMessage( HUD_PRINTTALK, (TOURNAMENT.allScores.players[rply.id].nick .. ": " .. TOURNAMENT.allScores.players[rply.id].totalScore))
+    end
+    ply:PrintMessage( HUD_PRINTTALK, "Fun Fact: " .. ply:funfact())
+  end
+end
 
 concommand.Add( "reruninit", TOURNAMENT.serverInit )
 
@@ -199,8 +217,15 @@ concommand.Add( "tprintglobaltable", function(ply, cmd, args)
 end)
 
 concommand.Add( "tscoreboard", function(ply, cmd, args)  
+  --for k,ply in pairs(player.GetAll()) do
+  --  ply:reportRoundScore()
+  --end
+  TOURNAMENT:allTimeScoreboard()
+end)
+
+concommand.Add( "tfunfact", function(ply, cmd, args)
   for k,ply in pairs(player.GetAll()) do
-    ply:reportRoundScore()
+    util.ttttAnnounce(ply:Name() .. ": " .. ply:funfact())
   end
 end)
 

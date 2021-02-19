@@ -1,8 +1,6 @@
 -- Hooks & Routines for awarding imdividual scores for
 -- player activities during the round go in this file.
 
---PrintTable(TOURNAMENT)
-
 --
     BaseScore = 10               -- Set a base score to be used (don't know the best value yet)
     BoringWeapons = {"weapon_ttt_m16", "weapon_ttt_unarmed", "weapon_zm_shotgun", "weapon_ttt_push", "weapon_zm_pistol", "weapon_zm_rifle", "weapon_ttt_glock", "weapon_zm_mac10", "weapon_zm_revolver"}
@@ -33,6 +31,7 @@
     gameevent.Listen("DoPlayerDeath")
     hook.Add("DoPlayerDeath", "PlayerDeath", function(victim, attacker, dmginfo)
         inflictor = dmginfo:GetAttacker():GetActiveWeapon()
+        victim:incDeaths()
         if attacker:IsPlayer() and not attacker:IsWorld() then
             if TOURNAMENT.TEAM_TRAITOR[victim:GetRole()] and TOURNAMENT.TEAM_INNOCENT[attacker:GetRole()] then
                 -- Victim is a traitor, attacker is innocent]
@@ -52,10 +51,10 @@
                 end
 
                 -- Increment round kill counter for the innocent
-                attacker:incTraitorKills()                
+                attacker:incTraitorKills()
 
                 -- If it's the golden deagle, award a bonus
-                if inflictor:GetClass() == "weapon_powerdeagle" then
+                if inflictor:GetClass() == "weapon_ttt_powerdeagle" then
                     attacker:awardScore(BaseScore * 1)
                     attacker:logScore((BaseScore * 1) .. " bonus points for good detective work" )
                 end

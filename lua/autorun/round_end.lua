@@ -172,9 +172,8 @@ function TOURNAMENT:transferRoundScoresToGlobalScores()
         util.ttttDebug("Transfer & distribute the round scores to the global tables")
 
         -- Loop through the table keys, and transfer them from each player to the TOURNAMENT.allScores table
-        local sharedAttributres = {"totalScore", "traitorKills", "innocentKills", "killerKills", "jesterKills", "ownTeamKills", "suicides"}
         for i,ply in pairs(player.GetAll()) do
-            for j,attr in pairs(sharedAttributres) do
+            for j,attr in pairs(TOURNAMENT.sharedAttributes) do
                 ply.global_score[attr] = ply.global_score[attr] + ply.round_score[attr]
                 ply.session_score[attr] = ply.session_score[attr] + ply.round_score[attr]
             end
@@ -227,7 +226,6 @@ end
 gameevent.Listen("TTTEndRound")
 hook.Add("TTTEndRound", "TournamentRoundEndScoring", function(win_type)
     if SERVER then
-        print("---------------> " .. win_type)
         -- no need to read because all data already in TOURNAMENT.allScores table
         -- at server start must call readScoresFromDisk()
         --readScoresFromDisk()
