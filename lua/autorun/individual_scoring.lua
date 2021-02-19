@@ -39,16 +39,16 @@
 
                 -- Dock points from victim
                 victim:awardScore(BaseScore * -1)
-                victim:logScore((BaseScore * -1) .. " points for letting the innocents kill you" )
+                victim:logScore((BaseScore * -1) .. " bonus points for letting the innocents kill you" )
 
                 -- Award points to attacker
                 attacker:awardScore(BaseScore * 1)
-                attacker:logScore((BaseScore * 1) .. " points for killing a traitor" )
+                attacker:logScore((BaseScore * 1) .. " bonus points for killing a traitor" )
 
                 -- Award spree points if it's not the first kill
                 if attacker.round_score.traitorKills > 0 then
                     attacker:awardScore(BaseScore * 0.5)
-                    attacker:logScore((BaseScore * 0.5) .. " points for a killing spree" )
+                    attacker:logScore((BaseScore * 0.5) .. " bonus points for a killing spree" )
                 end
 
                 -- Increment round kill counter for the innocent
@@ -57,7 +57,7 @@
                 -- If it's the golden deagle, award a bonus
                 if inflictor:GetClass() == "weapon_powerdeagle" then
                     attacker:awardScore(BaseScore * 1)
-                    attacker:logScore((BaseScore * 1) .. " points for good detective work" )
+                    attacker:logScore((BaseScore * 1) .. " bonus points for good detective work" )
                 end
                 
                 print(inflictor:GetClass() .. ' vs ' .. attacker.global_score.favouriteWeapon)
@@ -65,7 +65,7 @@
                     -- If it's an interesting weapon, award a bonus
                     if not util.strInTable(BoringWeapons, inflictor:GetClass()) then
                         attacker:awardScore(BaseScore * 1)
-                        attacker:logScore((BaseScore * 1) .. " points for a kill using an interesting weapon")
+                        attacker:logScore((BaseScore * 1) .. " bonus points for a kill using an interesting weapon")
                     end
                     -- If it's a favourite weapon, dock points
                     if inflictor:GetClass() == attacker.global_score.favouriteWeapon then
@@ -80,16 +80,16 @@
 
                 -- Dock points from victim
                 victim:awardScore(BaseScore * -1)
-                victim:logScore((BaseScore * -1) .. " points for dying at the hands of a traitor" )
+                victim:logScore((BaseScore * 1) .. " points deducted for dying at the hands of a traitor" )
 
                 -- Award points to attacker
                 attacker:awardScore(BaseScore * 1.5)
-                attacker:logScore((BaseScore * 1.5) .. " points for killing an innocent" )
+                attacker:logScore((BaseScore * 1.5) .. " bonus points for killing an innocent" )
 
                 -- Award spree points if it's not the first kill
                 if attacker.round_score.innocentKills > 0 then
                     attacker:awardScore(BaseScore * 0.5)
-                    attacker:logScore((BaseScore * 0.5) .. " points for a killing spree" )
+                    attacker:logScore((BaseScore * 0.5) .. " bonus points for a killing spree" )
                 end
 
                 -- Increment round kill counter for the traitor
@@ -101,7 +101,7 @@
                     -- If it's an interesting weapon, award a bonus
                     if not util.strInTable(BoringWeapons, inflictor:GetClass()) then
                         attacker:awardScore(BaseScore * 1)
-                        attacker:logScore((BaseScore * 1) .. " points for a kill using an interesting weapon")
+                        attacker:logScore((BaseScore * 1) .. " bonus points for a kill using an interesting weapon")
                     end
                     -- If it's a favourite weapon, dock points
                     if inflictor:GetClass() == attacker.global_score.favouriteWeapon then
@@ -120,7 +120,7 @@
 
                 -- Dock points for team kill
                 attacker:awardScore(BaseScore * -2)
-                attacker:logScore((BaseScore * -2) .. " points for being an idiot and killing your team mate" )
+                attacker:logScore((BaseScore * 2) .. " points deducted for being an idiot and killing your team mate" )
 
 
             elseif TOURNAMENT.TEAM_INNOCENT[victim:GetRole()] and TOURNAMENT.TEAM_INNOCENT[attacker:GetRole()] then
@@ -128,7 +128,7 @@
 
                 -- Dock points for team kill
                 attacker:awardScore(BaseScore * -2)
-                attacker:logScore((BaseScore * -2) .. " points for being an idiot and killing your team mate" )
+                attacker:logScore((BaseScore * 2) .. " points deducted for being an idiot and killing your team mate" )
 
                 -- Increment round kill counter for the innocent, and own team kills counter
                 attacker:incInnocentKills()
@@ -139,11 +139,11 @@
 
                 -- Award points to attacker
                 attacker:awardScore(BaseScore * 2)
-                attacker:logScore((BaseScore * 2) .. " points for killing the killer" )
+                attacker:logScore((BaseScore * 2) .. " bonus points for killing the killer" )
 
                 -- Dock points from victim
                 victim:awardScore(BaseScore * -1)
-                victim:logScore((BaseScore * -1) .. " points for getting killed as the killer" )
+                victim:logScore((BaseScore * 1) .. " points deducted for getting killed as the killer" )
 
                 -- Increment round kill counter for the attacker
                 attacker:incKillerKills()
@@ -153,11 +153,11 @@
 
                 -- Award points to the killer
                 attacker:awardScore(BaseScore * 1)
-                attacker:logScore((BaseScore * 1) .. " points for going off killing again" )
+                attacker:logScore((BaseScore * 1) .. " bonus points for going off killing again" )
 
                 -- Dock points from the victim
                 victim:awardScore(BaseScore * -1)
-                victim:logScore((BaseScore * -1) .. " points for getting killed by the killer" )
+                victim:logScore((BaseScore * 1) .. " points deducted for getting killed by the killer" )
 
                 -- Increment round kill counter for the killer
                 attacker:incKillCountersByRole(victim:GetRole())
@@ -173,16 +173,16 @@
 
                 -- Dock points from the attacker
                 attacker:awardScore(BaseScore * -1)
-                attacker:logScore((BaseScore * -1) .. " points for being made a fool of by the " .. jesterType)
+                attacker:logScore((BaseScore * -1) .. " points deducted for being made a fool of by the " .. jesterType)
 
                 -- Award points to the jester
                 victim:awardScore(BaseScore * 1)
-                victim:logScore((BaseScore * 1) .. " points for making a fool of " .. attacker:Nick())
+                victim:logScore((BaseScore * 1) .. " bonus points for making a fool of " .. attacker:Nick())
                 end
             end
         else
             victim:awardScore(BaseScore * -0.5)
-            victim:logScore((BaseScore * -0.5) .. " points for suicide or world kill")
+            victim:logScore((BaseScore * -0.5) .. " points deducted for suicide or world kill")
 
             victim:incSuicides()
         end

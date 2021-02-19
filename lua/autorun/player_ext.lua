@@ -173,3 +173,16 @@ function plymeta:nerfScore(pnts)
     -- are updated at the end of the round
     self.round_score.totalScore = self.round_score.totalScore - pnts
 end
+
+function plymeta:funfact()
+    local facts = {
+        [0] = ("You've played " .. self.global_score.roundsPlayed .. " round" .. util.ttttPluralise(self.global_score.roundsPlayed) .."!"),
+        [1] = ("You've killed " .. self.global_score.traitorKills .. " traitor" .. util.ttttPluralise(self.global_score.traitorKills) .."!"),
+        [2] = ("You've killed " .. self.global_score.innocentKills .. " innocent" .. util.ttttPluralise(self.global_score.innocentKills) .."!"),
+        [3] = ("You've killed " .. self.global_score.killerKills.. " killer" .. util.ttttPluralise(self.global_score.killerKills) .."!"),
+        [4] = ("You've killed " .. self.global_score.jesterKills.. " jesters or swapper" .. util.ttttPluralise(self.global_score.jesterKills) .."!"),
+        [5] = ("You've have " .. self.global_score.ownTeamKills.. " own team kill" .. util.ttttPluralise(self.global_score.ownTeamKills) .."!"),
+        [6] = ("You've commited suicide " .. self.global_score.suicides .. " time" .. util.ttttPluralise(self.global_score.suicides) .."!"),
+    }
+    return facts[math.random(0, 6)]
+end

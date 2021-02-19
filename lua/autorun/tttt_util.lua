@@ -27,11 +27,19 @@ end
 
 -- If DEBUG then print debug messages
 function util.ttttDebug(msg)
-    --if SERVER then 
         if TOURNAMENT.DEBUG:GetBool() then 
           print("TTTT DEBUG: " .. msg)
         end
-    --end
+end
+
+function util.ttttConsoleMsg(msg)
+      print("TTT Tournament: " .. msg)
+end
+
+function util.ttttAnnounce(msg)
+  for k, ply in pairs(player.GetAll()) do
+    ply:PrintMessage( HUD_PRINTTALK, msg)
+  end
 end
 
 function util.ttttGetPlayerFromName(playerName)
@@ -40,4 +48,12 @@ function util.ttttGetPlayerFromName(playerName)
       return ply
     end
 	end
+end
+
+function util.ttttPluralise(val)
+  if val == 1 then
+    return ""
+  else
+    return "s"
+  end
 end

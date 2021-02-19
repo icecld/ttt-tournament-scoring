@@ -3,57 +3,90 @@
 -- Calculate baseline bonus for members of winning team
 function TOURNAMENT:CalcTeamWinBonus(win_type)
 
-    util.ttttDebug("Computing win bonuses")
+    util.ttttDebug("Computing win bonuses. Win type: " .. win_type)
 
+    local available_points =  100
+    local numInnocent = 0
+    local numTraitor = 0
+    local numJester = 0
+    local numKiller = 0
+
+    -- Count all players roles
+    for k,ply in pairs(player.GetAll()) do
+        if TOURNAMENT.TEAM_INNOCENT[ply:GetRole()] then
+            numInnocent = numInnocent + 1
+        elseif TOURNAMENT.TEAM_TRAITOR[ply:GetRole()] then
+            numTraitor = numTraitor + 1
+        elseif TOURNAMENT.TEAM_JESTER[ply:GetRole()] then
+            numJester = numJester + 1
+        elseif ply:GetRole() == ROLE_KILLER then
+            numKiller = numKiller + 1
+        end
+    end
+    local totalPlayers = numInnocent + numTraitor + numJester + numKiller
 
     local win_bonus = 0
 
     -- Check who won and calculate team score
     if win_type == WIN_INNOCENT or win_type == WIN_TIMELIMIT then
+        util.ttttDebug("Innocent win computation")
         -- Innocents win - bonus = number of living players remaining
         -- Yes this will give a bonus for a living jester
-        util.ttttDebug("Innocent win computation")
-        for k,v in pairs(player.GetAll()) do
-            win_bonus = win_bonus + util.bool2num(v:Alive())
-        end
-    elseif win_type == WIN_TRAITOR then
-        -- Traitors get (num_killed)/(num_traitor-num_dead_traitor)
-
-        util.ttttDebug("Traitor win computation")
-        local num_killed = 0
-        local num_traitor = 0
-        local num_dead_traitor = 0
-        -- For all players get required numbers, this should be replaced
-        -- with online tracking of these values
-        for k,v in pairs(player.GetAll()) do
-            -- If player role not in team traitor
-            if TOURNAMENT.TEAM_TRAITOR[v:GetRole()] then
-                -- How many traitors
-                num_traitor = num_traitor + 1
-                -- Is dead traitor
-                if not v:Alive() then
-                    num_dead_traitor = num_dead_traitor + 1
-                end
-            else
-                -- If player is dead not traitor then increment
-                num_killed = num_killed + util.bool2num(v:Alive())
+        local pointsValuePerInno = math.floor(available_points / (numInnocent + numJester))
+        util.ttttDebug(pointsValuePerInno .. " points available per innocent alive")
+        for k,ply in pairs(player.GetAll()) do
+            -- Win bonus is number of innos alive * the points value per player
+            if (TOURNAMENT.TEAM_INNOCENT[ply:GetRole()] or TOURNAMENT.TEAM_JESTER[ply:GetRole()]) and ply:Alive() then
+                win_bonus = win_bonus + pointsValuePerInno
             end
         end
 
-        -- Calculate win bonus
-        win_bonus = num_killed/(num_traitor-num_dead_traitor)
+    elseif win_type == WIN_TRAITOR then
+
+        util.ttttDebug("Traitor win computation")
+
+        local pointsValuePerInno = math.floor(available_points / (numInnocent + numKiller))
+        local pointsValuePerTrait = math.floor(available_points / (numTraitor))
+        util.ttttDebug(pointsValuePerInno .. " points available per innocent killed dead minus " .. pointsValuePerTrait .. " per dead traitor")
+        for k,ply in pairs(player.GetAll()) do
+            -- Win bonus is number of innos alive * the points value per player
+            if TOURNAMENT.TEAM_TRAITOR[ply:GetRole()] then
+                win_bonus = (pointsValuePerInno * (ply.round_score.innocentKills + ply.round_score.killerKills))
+                if not ply:Alive() then
+                    win_bonus = win_bonus - pointsValuePerTrait
+                end
+            end
+        end
+
 
     elseif win_type == WIN_KILLER then
         util.ttttDebug("Killer win computation")
-        -- Killer kills everyone, bonus = 1 per kill
-        win_bonus = self.round_score["innocentKills"] + self.round_score["traitorKills"]        -- shouldn't be self? Fix.
+        local pointsValuePerPly = math.floor(available_points / (totalPlayers - numKiller - numJester))
+        for k,ply in pairs(player.GetAll()) do
+            -- Win bonus is number of kills by the killer * player points value
+            if ply:GetRole() == ROLE_KILLER then
+                win_bonus = (pointsValuePerPly * (ply.round_score.innocentKills + ply.round_score.traitorKills))
+            end
+        end
+        -- Give bonus because winning as the killer is hard.
+        win_bonus = win_bonus + 20
+
+
     elseif win_type == WIN_JESTER then
         util.ttttDebug("Jester win computation")
-        -- Jester jests everyone, bonus = 1 per player on server
-        win_bonus = player.GetCount()
+        -- Win bonus is number of people who can't see the jester's identity * points value
+        local pointsValuePerPly = math.floor(available_points / (totalPlayers - numJester))
+        win_bonus = pointsValuePerPly * numInnocent
     end
 
-    util.ttttDebug("Win bonus is " .. win_bonus)
+    -- Double check that bonus isn't out of range. I don't think it ever should be but, you know, rounding innit.
+    if win_bonus > available_points then
+        win_bonus = available_points
+    elseif win_bonus < 0 then
+        win_bonus = 0
+    end
+
+    util.ttttDebug("The win bonus for the winning team is " .. win_bonus)
 
     return win_bonus
 
@@ -67,7 +100,7 @@ function TOURNAMENT:RoundEndTeamScoring(win_type)
         util.ttttDebug("Round end compute scoring and assign")
 
         -- Winning team base bonus
-        local win_bonus = TOURNAMENT.CalcTeamWinBonus(win_type)
+        local win_bonus = TOURNAMENT:CalcTeamWinBonus(win_type)
         -- For each player check if their team won and allocate points
         for k,ply in pairs(player.GetAll()) do
 
@@ -83,12 +116,10 @@ function TOURNAMENT:RoundEndTeamScoring(win_type)
                 -- Half points for deados is final modifier
                 if ply:Alive() ~= true then score_modifier = score_modifier/2 end
 
-                util.ttttDebug("Score modifier for " .. ply:Nick() .. ": " .. score_modifier)
-
                 local ply_score = win_bonus*score_modifier
 
                 -- Give win bonus to player
-                util.ttttDebug(ply:Nick() .. " awarded " .. ply_score .. " end of round points")
+                util.ttttDebug(ply:Nick() .. " awarded " .. ply_score .. " end of round points (" .. win_bonus .. " * " .. score_modifier * 100 .. "%")
                 ply:awardScore(ply_score)
                 ply:logScore(ply_score .. " end of round points")
             end
@@ -195,30 +226,31 @@ end
 
 gameevent.Listen("TTTEndRound")
 hook.Add("TTTEndRound", "TournamentRoundEndScoring", function(win_type)
+    if SERVER then
+        print("---------------> " .. win_type)
+        -- no need to read because all data already in TOURNAMENT.allScores table
+        -- at server start must call readScoresFromDisk()
+        --readScoresFromDisk()
+        if SERVER and TOURNAMENT.FirstInit then
+            util.ttttDebug("Running round end scoring")
+            TOURNAMENT:RoundEndIncrementCounters()
 
-    -- no need to read because all data already in TOURNAMENT.allScores table
-    -- at server start must call readScoresFromDisk()
-    --readScoresFromDisk()
-    if SERVER and TOURNAMENT.FirstInit then
-        util.ttttDebug("Running round end scoring")
-        TOURNAMENT:RoundEndIncrementCounters()
+            -- *functions to hand out scores to go here*
+            util.ttttDebug("Assigning team scores for round end")
+            TOURNAMENT:RoundEndTeamScoring(win_type)
+            TOURNAMENT:transferRoundScoresToGlobalScores()
 
-        -- *functions to hand out scores to go here*
-        util.ttttDebug("Assigning team scores for round end")
-        TOURNAMENT:RoundEndTeamScoring(win_type)
-        TOURNAMENT:transferRoundScoresToGlobalScores()
+            --roundEndIndividualScoring() -- not implemented
+            --rountEndVoteScoring()       -- not implemented  
 
-        --roundEndIndividualScoring() -- not implemented
-        --rountEndVoteScoring()       -- not implemented  
+            -- Tell everyone their score
+            for k,ply in pairs(player.GetAll()) do
+                ply:reportRoundScore()
+            end
 
-        -- Tell everyone their score
-        for k,ply in pairs(player.GetAll()) do
-            ply:reportRoundScore()
+            util.ttttDebug("Write scores to disk")
+
+            TOURNAMENT.WriteScoresToDisk()
         end
-
-        util.ttttDebug("Write scores to disk")
-
-        TOURNAMENT.WriteScoresToDisk()
     end
-
 end)

@@ -92,61 +92,34 @@ function TOURNAMENT:AddToTournament(ply)
   util.ttttDebug("Add new player to the tournament score table " .. ply:Name())
       -- WARNING players must have a valid global_score table before doing this. Make sure to create when
       -- joining the server.
-      util.ttttDebug("" .. ply:Name() .. " is a noob. has no global score... initialising...")
+      util.ttttConsoleMsg("" .. ply:Name() .. " is a noob. Has no global score: initialising their score table...")
 
       TOURNAMENT.allScores.players[ply:SteamID()] = ply.global_score
 
-      util.ttttDebug("Player " .. ply:Name() .. " added to tournament scoring table. Their data will be saved a the end of the next round.")
+      util.ttttConsoleMsg("Player " .. ply:Name() .. " added to tournament scoring table. Their data will be saved a the end of the next round.")
 end
 
 -- Maybe we move all the save load stuff to its own file...
 -- Read in the scores from the JSON file
 function TOURNAMENT:ReadScoresFromDisk()
 
-    util.ttttDebug("Attempting to load data")
+    util.ttttConsoleMsg("Attempting to load data")
 
     local loadedData = file.Read("tournamentscoring/playerdata.json", "DATA")
     -- If the file  exists, read it, else give empty JSON to return as a table.
     if loadedData then
-      util.ttttDebug("Data file found... loading...")
-      util.ttttDebug("Loaded saved data from disk")
+      util.ttttConsoleMsg("Data file found... loading...")
+      util.ttttConsoleMsg("Loaded saved data from disk")
     else
-      util.ttttDebug("No saved tournament data found. Initialising new data")
+      util.ttttConsoleMsg("No saved tournament data found. Initialising new data")
       --local data = "{\"meta\":{\"totalRounds\":0}}"
       loadedData = "{\"meta\":{\"totalRounds\":0, \"totalPlayers\":0},\"players\":[]}"
     end
 
     local tableFromDisk = util.JSONToTable(loadedData)
-
-    PrintTable(tableFromDisk)
-
-    -- search table for the currently online players and recall their saved scores
-    -- then make a list of the offline players so they don't get overwritten next time
-  
-    -- ** @Tim: is there a more efficient way to do this without having to have nested iteratations
-    -- that linear search both the recalled and online players tables for matching IDs?
-    -- ** @George: I think it will work better to store the whole of the disk score file in memory,
-    -- update and write out as needed
   
     -- Bring full table into memory
     TOURNAMENT.allScores = tableFromDisk
-
-  
-    -- Using Steam ID as Key in TOURNAMENT.allSocres will allow non-conflicting access
-    -- Add any new players to this score table, must call when player joins as well
-    -- Also update player global score tables to match tournament score table
-
-    --util.ttttDebug("Add players to tournament scoring table")
-    --util.ttttDebug("Move data from disk scores to player metatable")
-    --for k,v in pairs(player.getAll()) do
-    --    TOURNAMENT.AddToTournament(v)
-    --    v.global_score = TOURNAMENT.allScores..players[v:SteamID()]
-    --end
-  
-    
-    -- We now have all of the file containing the score history stored in both PlyMeta.global_score tables
-    -- and also in TOURNAMENT.allScores..players[STEAM_ID], this isn't great but let's see what happens
-  
   end
 
 gameevent.Listen( "PlayerAuthed" )
@@ -164,9 +137,10 @@ hook.Add("PlayerAuthed", "PlayerConnectionHandler", function(ply, steamid, uniqu
 
         local oldnick = TOURNAMENT.allScores.players[ply:SteamID()].nick
         TOURNAMENT.allScores.players[ply:SteamID()].nick = ply:Name()
-        util.ttttDebug("Updated " .. ply:Name() .. "'s nickname due to mismatch: " .. oldnick .. " -> " .. ply:Name())
+        util.ttttConsoleMsg("Updated " .. ply:Name() .. "'s nickname due to mismatch: " .. oldnick .. " -> " .. ply:Name())
 
       end
+      util.ttttAnnounce("Welcome back, " .. ply:Name() .. ". " .. ply:funfact())
     else
       -- First time we've seen this player - add the player to the tournament
       TOURNAMENT:AddToTournament(ply)
@@ -181,12 +155,11 @@ function TOURNAMENT:serverInit()
 
   if SERVER then
 
-    util.ttttDebug("Server initialisation...")
+    util.ttttConsoleMsg("A probably buggy mod by icecold.trashcan & trogdip")
     util.ttttDebug("TTT Tournament Scoring is loaded and in debug")
     --ttttDefineRoles()
 
     -- Read Scores table from disk
-    util.ttttDebug("Attempt to load data")
     TOURNAMENT:ReadScoresFromDisk()
     TOURNAMENT.FirstInit = true
   end
