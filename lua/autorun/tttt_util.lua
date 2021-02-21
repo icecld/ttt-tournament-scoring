@@ -51,9 +51,18 @@ function util.ttttGetPlayerFromName(playerName)
 end
 
 function util.ttttPluralise(val)
-  if val == 1 then
+  if (val == 1) or (val == 0) then
     return ""
   else
     return "s"
+  end
+end
+
+function util.ttttNeverHaveIEver(val, verb, suffix)
+  if suffix == nil then suffix = "" end
+  if val == 0 then
+    return "never " .. verb .. " " .. suffix
+  else
+    return (verb .. " " .. val)
   end
 end

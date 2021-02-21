@@ -23,16 +23,21 @@
     -- Piggybacking on karma system (discourage bad behaviour)
     gameevent.Listen("TTTKarmaGivePenalty")
     hook.Add("TTTKarmaGivePenalty", "Karma", function(ply, penalty, victim)
-        ply:awardScore(BaseScore * -1)
-        ply:logScore((BaseScore * -1) .. " points for bad karma" )
+        ply:logKarma(penalty)
     end)
 
     -- Player dies, calculate scores to give to the attackers and victims.
     gameevent.Listen("DoPlayerDeath")
     hook.Add("DoPlayerDeath", "PlayerDeath", function(victim, attacker, dmginfo)
-        inflictor = dmginfo:GetAttacker():GetActiveWeapon()
+        local inflictor = dmginfo:GetInflictor()
+        print(inflictor)
+        if dmginfo:GetAttacker():IsPlayer() and not inflictor:IsValid() then
+            if dmginfo:GetAttacker():Alive() then
+                inflictor = dmginfo:GetAttacker():GetActiveWeapon()
+            end
+        end
         victim:incDeaths()
-        if attacker:IsPlayer() and not attacker:IsWorld() then
+        if attacker:IsPlayer() and not attacker:IsWorld() and not (attacker == victim) then
             if TOURNAMENT.TEAM_TRAITOR[victim:GetRole()] and TOURNAMENT.TEAM_INNOCENT[attacker:GetRole()] then
                 -- Victim is a traitor, attacker is innocent]
 
@@ -93,7 +98,8 @@
 
                 -- Increment round kill counter for the traitor
                 attacker:incInnocentKills()
-
+                print("call")
+                print(inflictor)
                 -- If it's an interesting weapon award a bonus
                 print(inflictor:GetClass() .. ' vs ' .. attacker.global_score.favouriteWeapon)
                 if inflictor:IsWeapon() then
@@ -180,12 +186,19 @@
                 end
             end
         else
-            victim:awardScore(BaseScore * -0.5)
-            victim:logScore((BaseScore * -0.5) .. " points deducted for suicide or world kill")
-
-            victim:incSuicides()
+            -- victim suicided in some way, or got killed by the world.
+            if dmginfo:GetDamageType() == DMG_FALL then
+                victim:awardScore(BaseScore * -0.5)
+                victim:logScore((BaseScore * -0.5) .. " points deducted for death by fall damage")
+                victim:incSuicides()
+                victim:incFallDeaths()
+            else
+                victim:awardScore(BaseScore * -0.5)
+                victim:logScore((BaseScore * -0.5) .. " points deducted for suicide or world kill")
+                victim:incSuicides()
+            end
         end
-        if inflictor:IsWeapon() then
+        if inflictor:IsValid() then
             if attacker.round_score.weapons[inflictor:GetClass()] ~= nil then
                 attacker.round_score.weapons[inflictor:GetClass()] = attacker.round_score.weapons[inflictor:GetClass()] + 1
             else

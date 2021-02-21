@@ -11,13 +11,13 @@ include("tttt_util.lua")
 -- ttt already defines SCORE let's use TOURNAMENT to avoid confusion in namespace
 TOURNAMENT.allScores = {}
 TOURNAMENT.allScores.players = {}
-TOURNAMENT.allScores.meta = {totalRounds = 0}
+TOURNAMENT.allScores.meta = {totalRounds = 0, totalPlayers = 0}
 TOURNAMENT.sessionRounds = 0
 TOURNAMENT.nonPlayers = {}
 TOURNAMENT.BaseScore = 10
 TOURNAMENT.BoringWeapons = {}
 TOURNAMENT.FirstInit = false
-TOURNAMENT.sharedAttributes = {"totalScore", "traitorKills", "innocentKills", "killerKills", "jesterKills", "ownTeamKills", "suicides", "totalKills", "totalDeaths"}
+TOURNAMENT.sharedAttributes = {"totalScore", "traitorKills", "innocentKills", "killerKills", "jesterKills", "ownTeamKills", "suicides", "fallDeaths", "totalKills", "totalDeaths"}
 
 -- Player roles
 ROLE_INNOCENT = 0
@@ -96,6 +96,7 @@ function TOURNAMENT:AddToTournament(ply)
       util.ttttConsoleMsg("" .. ply:Name() .. " is a noob. Has no global score: initialising their score table...")
 
       TOURNAMENT.allScores.players[ply:SteamID()] = ply.global_score
+      TOURNAMENT.allScores.meta.totalPlayers = TOURNAMENT.allScores.meta.totalPlayers + 1
 
       util.ttttConsoleMsg("Player " .. ply:Name() .. " added to tournament scoring table. Their data will be saved a the end of the next round.")
 end

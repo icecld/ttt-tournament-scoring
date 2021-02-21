@@ -73,6 +73,7 @@ function plymeta:initRoundScoreTable()
     util.ttttDebug("Initialise player round_score table for " .. self:Name())
     self.round_score = {}
     self.round_score.log = {}
+    self.round_score.karma = {}
 
     for i, attr in ipairs(TOURNAMENT.sharedAttributes) do
         self.round_score[attr] = 0
@@ -114,13 +115,17 @@ end
 
 -- Increment round_score Own Team Kill Counter
 function plymeta:incOwnTeamKills()
-    self.round_score.jesterKills = self.round_score.jesterKills + 1
+    self.round_score.ownTeamKills = self.round_score.ownTeamKills + 1
     self.round_score.totalKills = self.round_score.totalKills + 1
 end
 
 -- Increment round_score Suicides Counter
 function plymeta:incSuicides()
-    self.round_score.jesterKills = self.round_score.jesterKills + 1
+    self.round_score.suicides = self.round_score.suicides + 1
+end
+
+function plymeta:incFallDeaths()
+    self.round_score.fallDeaths = self.round_score.fallDeaths + 1
 end
 
 -- Increment round_score Kill Counter by supplied role
@@ -142,6 +147,22 @@ end
 function plymeta:logScore(msg)
     util.ttttDebug("SCORE LOG: " .. self:GetName() .. ": " .. msg)
     table.insert(self.round_score.log, msg)
+end
+
+function plymeta:logKarma(penalty)
+    table.insert(self.round_score.karma, penalty)
+end
+
+function plymeta:applyKarmaScorePenalty()
+    local total = 0
+    for k, penalty in pairs(self.round_score.karma) do
+        total = total + penalty
+    end
+    total = (math.floor(total/10))
+    if total > 0 then
+        self:awardScore(-total)
+        self:logScore(total .. " points deducted for bad karma" )
+    end
 end
 
 -- Tell the player their all time score
@@ -175,23 +196,26 @@ end
 
 function plymeta:funfact()
     local facts = {
-        [1] = ("You've played " .. self.global_score.roundsPlayed .. " round" .. util.ttttPluralise(self.global_score.roundsPlayed) .."!"),
-        [2] = ("You've killed " .. self.global_score.traitorKills .. " traitor" .. util.ttttPluralise(self.global_score.traitorKills) .."!"),
-        [3] = ("You've killed " .. self.global_score.innocentKills .. " innocent" .. util.ttttPluralise(self.global_score.innocentKills) .."!"),
-        [4] = ("You've killed " .. self.global_score.killerKills.. " killer" .. util.ttttPluralise(self.global_score.killerKills) .."!"),
-        [5] = ("You've killed " .. self.global_score.jesterKills.. " jesters or swapper" .. util.ttttPluralise(self.global_score.jesterKills) .."!"),
-        [6] = ("You've have " .. self.global_score.ownTeamKills.. " own team kill" .. util.ttttPluralise(self.global_score.ownTeamKills) .."!"),
-        [7] = ("You've commited suicide " .. self.global_score.suicides .. " time" .. util.ttttPluralise(self.global_score.suicides) .."!"),
-        [8] = ("You have died " .. self.global_score.totalDeaths .. " time" .. util.ttttPluralise(self.global_score.totalDeaths) .."!"),
-        [9] = ("You have committed " .. self.global_score.totalKills .. " murder" .. util.ttttPluralise(self.global_score.totalKills) .."!")
+        [1] = ("You've " .. util.ttttNeverHaveIEver(self.global_score.roundsPlayed, "played", "a") .. " round" .. util.ttttPluralise(self.global_score.roundsPlayed) .."!"),
+        [2] = ("You've " .. util.ttttNeverHaveIEver(self.global_score.traitorKills, "killed", "a") .. " traitor" .. util.ttttPluralise(self.global_score.traitorKills) .."!"),
+        [3] = ("You've " .. util.ttttNeverHaveIEver(self.global_score.innocentKills, "killed", "an") .. " innocent" .. util.ttttPluralise(self.global_score.innocentKills) .."!"),
+        [4] = ("You've " .. util.ttttNeverHaveIEver(self.global_score.killerKills, "killed", "a") .. " killer" .. util.ttttPluralise(self.global_score.killerKills) .."!"),
+        [5] = ("You've " .. util.ttttNeverHaveIEver(self.global_score.jesterKills, "killed", "a") .. " jester" .. util.ttttPluralise(self.global_score.jesterKills) .. " or swapper" .. util.ttttPluralise(self.global_score.jesterKills) .."!"),
+        [6] = ("You've " .. util.ttttNeverHaveIEver(self.global_score.ownTeamKills, "committed", "a") .. " team kill" .. util.ttttPluralise(self.global_score.ownTeamKills) .."!"),
+        [7] = ("You've committed suicide " .. self.global_score.suicides .. " time" .. util.ttttPluralise(self.global_score.suicides) .."!"),
+        [8] = ("You've died " .. self.global_score.totalDeaths .. " time" .. util.ttttPluralise(self.global_score.totalDeaths) .."!"),
+        [9] = ("You've " .. util.ttttNeverHaveIEver(self.global_score.totalKills, "committed", "a") .. " murder" .. util.ttttPluralise(self.global_score.totalKills) .."!"),
+        [10] =("You've " .. util.ttttNeverHaveIEver(self.global_score.fallDeaths, "had", "a") .. " fall damage death" .. util.ttttPluralise(self.global_score.fallDeaths) .."!")
     }
 
     if self.global_score.weapons["weapon_zom_claws"] ~= nil then
-        table.insert(facts, "You have turned " .. self.global_score.weapons["weapon_zom_claws"] .. " zombie" .. util.ttttPluralise(self.global_score.weapons["weapon_zom_claws"]) .."!")
+        table.insert(facts, "You've " .. util.ttttNeverHaveIEver(self.global_score.weapons["weapon_zom_claws"], "turned") .. " zombie" .. util.ttttPluralise(self.global_score.weapons["weapon_zom_claws"]) .."!")
     end
 
     if self.global_score.weapons["weapon_ttt_powerdeagle"] ~= nil then
-        table.insert(facts, "You have correctly golden deagued " .. self.global_score.weapons["weapon_ttt_powerdeagle"] .. " suspect" .. util.ttttPluralise(self.global_score.weapons["weapon_ttt_powerdeagle"]) .."!")
+        table.insert(facts, "You've correctly golden deagued " .. self.global_score.weapons["weapon_ttt_powerdeagle"] .. " suspect" .. util.ttttPluralise(self.global_score.weapons["weapon_ttt_powerdeagle"]) .."!")
+    else
+        table.insert(facts, "You've never correctly golden deagued a suspect!")
     end
 
     return facts[math.random(1, #facts)]

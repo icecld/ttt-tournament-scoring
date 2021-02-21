@@ -239,10 +239,11 @@ hook.Add("TTTEndRound", "TournamentRoundEndScoring", function(win_type)
             TOURNAMENT:transferRoundScoresToGlobalScores()
 
             --roundEndIndividualScoring() -- not implemented
-            --rountEndVoteScoring()       -- not implemented  
+            --rountEndVoteScoring()       -- not implemented
 
             -- Tell everyone their score
             for k,ply in pairs(player.GetAll()) do
+                ply:applyKarmaScorePenalty()
                 ply:reportRoundScore()
             end
 
