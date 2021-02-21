@@ -5,6 +5,7 @@
     BaseScore = 10               -- Set a base score to be used (don't know the best value yet)
     BoringWeapons = {"weapon_ttt_m16", "weapon_ttt_unarmed", "weapon_zm_shotgun", "weapon_ttt_push", "weapon_zm_pistol", "weapon_zm_rifle", "weapon_ttt_glock", "weapon_zm_mac10", "weapon_zm_revolver"}
     -- Set a list of boring weapons that we don't give bonus points for kills with
+    ProblematicWeapons = {"npc_barnacle", "ttt_banana_proj", "ttt_frag_proj", "prop_physics", "nv_explosion"}
 
     -- Body found (encourage searching bodies)
     gameevent.Listen("TTTBodyFound")
@@ -30,12 +31,16 @@
     gameevent.Listen("DoPlayerDeath")
     hook.Add("DoPlayerDeath", "PlayerDeath", function(victim, attacker, dmginfo)
         local inflictor = dmginfo:GetInflictor()
-        print(inflictor)
-        if dmginfo:GetAttacker():IsPlayer() and not inflictor:IsValid() then
-            if dmginfo:GetAttacker():Alive() then
-                inflictor = dmginfo:GetAttacker():GetActiveWeapon()
+        if inflictor:IsValid() then
+            if not util.strInTable(ProblematicWeapons, inflictor:GetClass()) then
+                if dmginfo:GetAttacker():IsPlayer() then --  and not inflictor:IsValid()
+                    if dmginfo:GetAttacker():Alive() then
+                        inflictor = dmginfo:GetAttacker():GetActiveWeapon()
+                    end
+                end
             end
         end
+
         victim:incDeaths()
         if attacker:IsPlayer() and not attacker:IsWorld() and not (attacker == victim) then
             if TOURNAMENT.TEAM_TRAITOR[victim:GetRole()] and TOURNAMENT.TEAM_INNOCENT[attacker:GetRole()] then
@@ -98,10 +103,10 @@
 
                 -- Increment round kill counter for the traitor
                 attacker:incInnocentKills()
-                print("call")
-                print(inflictor)
+                --print("call")
+                --print(inflictor)
                 -- If it's an interesting weapon award a bonus
-                print(inflictor:GetClass() .. ' vs ' .. attacker.global_score.favouriteWeapon)
+                --print(inflictor:GetClass() .. ' vs ' .. attacker.global_score.favouriteWeapon)
                 if inflictor:IsWeapon() then
                     -- If it's an interesting weapon, award a bonus
                     if not util.strInTable(BoringWeapons, inflictor:GetClass()) then
@@ -197,8 +202,8 @@
                 victim:logScore((BaseScore * -0.5) .. " points deducted for suicide or world kill")
                 victim:incSuicides()
             end
-        end
-        if inflictor:IsValid() then
+        end -- weapon_ttt_unarmed
+        if inflictor:IsValid() and attacker:IsPlayer() and not inflictor:IsPlayer() then
             if attacker.round_score.weapons[inflictor:GetClass()] ~= nil then
                 attacker.round_score.weapons[inflictor:GetClass()] = attacker.round_score.weapons[inflictor:GetClass()] + 1
             else
