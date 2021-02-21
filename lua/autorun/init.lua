@@ -1,7 +1,7 @@
 -- MAIN FILE - ttt-tournament-scoring
 
 TOURNAMENT = {}
-TOURNAMENT.version = 1.0
+TOURNAMENT.version = 1.1
 TOURNAMENT.DEBUG = CreateConVar("tttt_debug",1,FCVAR_NONE,"Debug TTT Tournament Scoring",0,1)
 
 -- Extra Utils
