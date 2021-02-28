@@ -106,7 +106,7 @@ function TOURNAMENT:RoundEndTeamScoring(win_type)
 
             -- If player role is a valid key in the table indexed by the win
             -- condition then award the win_bonus score to that player.
-            if TOURNAMENT.winComp[win_type][ply:GetRole()] == true then
+            if ply.round_score.inThisRound and TOURNAMENT.winComp[win_type][ply:GetRole()] then
 
                 -- Calculate player modifer
                 local score_modifier = 1
@@ -131,37 +131,36 @@ end
 -- Increment Round Counters For Everyone and The Server
 function TOURNAMENT:RoundEndIncrementCounters()
 
-    util.ttttDebug("Round end increment all counters")
 
     if SERVER then
 
+        util.ttttDebug("Round end increment all counters")
         --increment overall round counters
         TOURNAMENT.allScores.meta.totalRounds = TOURNAMENT.allScores.meta.totalRounds + 1
         TOURNAMENT.sessionRounds = TOURNAMENT.sessionRounds + 1
 
-    end
+        util.ttttDebug("Total Rounds Ever: " .. TOURNAMENT.allScores.meta.totalRounds)
+        util.ttttDebug("Total Rounds This Sesh: " .. TOURNAMENT.sessionRounds)
 
-    util.ttttDebug("Total Rounds Ever: " .. TOURNAMENT.allScores.meta.totalRounds)
-    util.ttttDebug("Total Rounds This Sesh: " .. TOURNAMENT.sessionRounds)
+        --increment players' individual round counters, depending on which team they're on
+        for k,ply in pairs(player.GetAll()) do
 
-    --increment players' individual round counters, depending on which team they're on
-    for k,ply in pairs(player.GetAll()) do
+            ply.global_score.roundsPlayed = ply.global_score.roundsPlayed + 1
+            ply.session_score.roundsPlayed = ply.session_score.roundsPlayed + 1
 
-        ply.global_score.roundsPlayed = ply.global_score.roundsPlayed + 1
-        ply.session_score.roundsPlayed = ply.session_score.roundsPlayed + 1
-
-        if TOURNAMENT.TEAM_INNOCENT[ply:GetRole()] then
-            ply.global_score.roundsPlayedAsInnocent = ply.global_score.roundsPlayedAsInnocent + 1
-            ply.session_score.roundsPlayedAsInnocent = ply.session_score.roundsPlayedAsInnocent + 1
-        elseif TOURNAMENT.TEAM_TRAITOR[ply:GetRole()] then
-            ply.global_score.roundsPlayedAsTraitor = ply.global_score.roundsPlayedAsTraitor + 1
-            ply.session_score.roundsPlayedAsTraitor = ply.session_score.roundsPlayedAsTraitor + 1
-        elseif TOURNAMENT.TEAM_JESTER[ply:GetRole()] then
-            ply.global_score.roundsPlayedAsJester = ply.global_score.roundsPlayedAsJester + 1
-            ply.session_score.roundsPlayedAsJester = ply.session_score.roundsPlayedAsJester + 1
-        elseif ROLE_KILLER == ply:GetRole() then
-            ply.global_score.roundsPlayedAsJester = ply.global_score.roundsPlayedAsJester + 1
-            ply.session_score.roundsPlayedAsJester = ply.session_score.roundsPlayedAsJester + 1
+            if TOURNAMENT.TEAM_INNOCENT[ply:GetRole()] then
+                ply.global_score.roundsPlayedAsInnocent = ply.global_score.roundsPlayedAsInnocent + 1
+                ply.session_score.roundsPlayedAsInnocent = ply.session_score.roundsPlayedAsInnocent + 1
+            elseif TOURNAMENT.TEAM_TRAITOR[ply:GetRole()] then
+                ply.global_score.roundsPlayedAsTraitor = ply.global_score.roundsPlayedAsTraitor + 1
+                ply.session_score.roundsPlayedAsTraitor = ply.session_score.roundsPlayedAsTraitor + 1
+            elseif TOURNAMENT.TEAM_JESTER[ply:GetRole()] then
+                ply.global_score.roundsPlayedAsJester = ply.global_score.roundsPlayedAsJester + 1
+                ply.session_score.roundsPlayedAsJester = ply.session_score.roundsPlayedAsJester + 1
+            elseif ROLE_KILLER == ply:GetRole() then
+                ply.global_score.roundsPlayedAsJester = ply.global_score.roundsPlayedAsJester + 1
+                ply.session_score.roundsPlayedAsJester = ply.session_score.roundsPlayedAsJester + 1
+            end
         end
     end
 
@@ -203,7 +202,7 @@ end
 
 -- Write the scores to the JSON file
 function TOURNAMENT:WriteScoresToDisk()
-    if SERVER then
+    if SERVER and TOURNAMENT.ENABLE then
         util.ttttDebug("Convert player data to JSON")
         -- Update TOURNAMENT.allScores with the current data stored in the player entities.
         for k,ply in pairs(player.GetAll()) do
@@ -225,7 +224,7 @@ end
 
 gameevent.Listen("TTTEndRound")
 hook.Add("TTTEndRound", "TournamentRoundEndScoring", function(win_type)
-    if SERVER then
+    if SERVER and TOURNAMENT.ENABLE then
         -- no need to read because all data already in TOURNAMENT.allScores table
         -- at server start must call readScoresFromDisk()
         --readScoresFromDisk()

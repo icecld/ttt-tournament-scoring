@@ -1,8 +1,9 @@
 -- MAIN FILE - ttt-tournament-scoring
 
 TOURNAMENT = {}
-TOURNAMENT.version = 1.1
+TOURNAMENT.version = 1.3
 TOURNAMENT.DEBUG = CreateConVar("tttt_debug",1,FCVAR_NONE,"Debug TTT Tournament Scoring",0,1)
+TOURNAMENT.ENABLE = false
 
 -- Extra Utils
 include("tttt_util.lua")
@@ -74,18 +75,19 @@ TOURNAMENT.winComp = {
   [WIN_TIMELIMIT] = TOURNAMENT.TEAM_INNOCENT
 }
 
+if engine.ActiveGamemode() == "terrortown" then
+  -- Messing with the player metatable following ttt
+  -- In here we extend the metatable to track round performance
+  include("player_ext.lua")     -- Serverside
+  include("player_ext_shd.lua") -- Shared
 
--- Messing with the player metatable following ttt
--- In here we extend the metatable to track round performance
-include("player_ext.lua")     -- Serverside
-include("player_ext_shd.lua") -- Shared
+  --Handling intra-round scoring based on players' acions, e.g. innocent killed a traitor
+  include("individual_scoring.lua")
 
---Handling intra-round scoring based on players' acions, e.g. innocent killed a traitor
-include("individual_scoring.lua")
-
--- Round end handling, team scores etc.
-include("round_end.lua")
-include("round_start.lua")
+  -- Round end handling, team scores etc.
+  include("round_end.lua")
+  include("round_start.lua")
+end
 
 
 -- If player not in tournament table then add player to the tournament table
@@ -126,7 +128,7 @@ function TOURNAMENT:ReadScoresFromDisk()
 
 gameevent.Listen( "PlayerAuthed" )
 hook.Add("PlayerAuthed", "PlayerConnectionHandler", function(ply, steamid, uniqueid)
-  if SERVER then
+  if SERVER and TOURNAMENT.ENABLE then
     util.ttttDebug("New Player Connected: " .. ply:Name())
     ply:initGlobalScoreTable()
     ply:initSessionScoreTable()
@@ -157,13 +159,22 @@ function TOURNAMENT:serverInit()
 
   if SERVER then
 
-    util.ttttConsoleMsg("A probably buggy mod by icecold.trashcan & trogdip, version " .. TOURNAMENT.version)
-    util.ttttDebug("TTT Tournament Scoring is loaded and in debug")
-    --ttttDefineRoles()
+    if engine.ActiveGamemode() == "terrortown" then
+      TOURNAMENT.ENABLE = true
+    else
+      TOURNAMENT.ENABLE = false
+      util.ttttConsoleMsg("Tournamnent is disabled! (gamemode is not terrortown)")
+    end
 
-    -- Read Scores table from disk
-    TOURNAMENT:ReadScoresFromDisk()
-    TOURNAMENT.FirstInit = true
+    if TOURNAMENT.ENABLE then
+      util.ttttConsoleMsg("A probably buggy mod by icecold.trashcan & trogdip, version " .. TOURNAMENT.version)
+      util.ttttConsoleMsg("Tournamnent is enabled!")
+      util.ttttDebug("TTT Tournament Scoring is loaded and in debug")
+
+      -- Read Scores table from disk
+      TOURNAMENT:ReadScoresFromDisk()
+      TOURNAMENT.FirstInit = true
+    end
   end
 
 end
@@ -190,50 +201,78 @@ end
 
 concommand.Add( "reruninit", TOURNAMENT.serverInit )
 
-concommand.Add( "tscore", function(ply, cmd, args)  
-	p = ents.FindByName(args[1])
-  for k,v in pairs(player.GetAll()) do
-    print(v.global_score.totalScore)
+concommand.Add( "tscore", function(ply, cmd, args)
+  if TOURNAMENT.ENABLE then
+    p = ents.FindByName(args[1])
+    for k,v in pairs(player.GetAll()) do
+      print(v.global_score.totalScore)
+    end
+  else
+    util.ttttConsoleMsg("Disabled (gamemode is not terrortown)")
   end
 end)
 
 concommand.Add( "tawardscore", function(ply, cmd, args)
-	local awardedply = util.ttttGetPlayerFromName(args[1])
-  local score = args[2]
-  awardedply.global_score.totalScore = awardedply.global_score.totalScore + score
-  awardedply:PrintMessage( HUD_PRINTTALK, "You have been given " .. (score) .. " points by " .. ply:GetName() .. "!" )
+  if TOURNAMENT.ENABLE then
+    local awardedply = util.ttttGetPlayerFromName(args[1])
+    local score = args[2]
+    awardedply.global_score.totalScore = awardedply.global_score.totalScore + score
+    awardedply:PrintMessage( HUD_PRINTTALK, "You have been given " .. (score) .. " points by " .. ply:GetName() .. "!" )
+  else
+    util.ttttConsoleMsg("Disabled (gamemode is not terrortown)")
+  end
 end)
 
 concommand.Add( "printplayertable", function(ply, cmd, args)
-	local ply = util.ttttGetPlayerFromName(args[1])
-  PrintTable(ply.round_score)
+    if TOURNAMENT.ENABLE then
+      local ply = util.ttttGetPlayerFromName(args[1])
+      PrintTable(ply.round_score)
+    else
+      util.ttttConsoleMsg("Disabled (gamemode is not terrortown)")
+    end
 end)
 
-concommand.Add( "tsave", function(ply, cmd, args)  
-    TOURNAMENT.WriteScoresToDisk()
+concommand.Add( "tsave", function(ply, cmd, args)
+    if TOURNAMENT.ENABLE then
+      TOURNAMENT.WriteScoresToDisk()
+    else
+      util.ttttConsoleMsg("Disabled (gamemode is not terrortown)")
+    end
 end)
 
-concommand.Add( "tprintglobaltable", function(ply, cmd, args)  
-  PrintTable(TOURNAMENT)
+concommand.Add( "tprintglobaltable", function(ply, cmd, args)
+  if TOURNAMENT.ENABLE then
+    PrintTable(TOURNAMENT)
+  else
+    util.ttttConsoleMsg("Disabled (gamemode is not terrortown)")
+  end
 end)
 
 concommand.Add( "tscoreboard", function(ply, cmd, args)  
   --for k,ply in pairs(player.GetAll()) do
   --  ply:reportRoundScore()
   --end
-  TOURNAMENT:allTimeScoreboard()
-end)
-
-concommand.Add( "tfunfact", function(ply, cmd, args)
-  for k,ply in pairs(player.GetAll()) do
-    util.ttttAnnounce(ply:Name() .. ": " .. ply:funfact())
+  if TOURNAMENT.ENABLE then
+    TOURNAMENT:allTimeScoreboard()
+  else
+    util.ttttConsoleMsg("Disabled (gamemode is not terrortown)")
   end
 end)
 
-concommand.Add( "test", function(ply, cmd, args)  
+concommand.Add( "tfunfact", function(ply, cmd, args)
+  if TOURNAMENT.ENABLE then
+    for k,ply in pairs(player.GetAll()) do
+      util.ttttAnnounce(ply:Name() .. ": " .. ply:funfact())
+    end
+  else
+    util.ttttConsoleMsg("Disabled (gamemode is not terrortown)")
+  end
+end)
+
+--concommand.Add( "test", function(ply, cmd, args)  
 	--print("First player has " .. TOURNAMENT.allScores.players[1].totalScore .. " points!")
   --print(TOURNAMENT.allScores.players["STEAM_0:0:43907269"].totalScore)
   --announcePoints()
   --writeScoresToDisk()
-  TOURNAMENT.FirstInit = true
-end)
+  --TOURNAMENT.FirstInit = true
+--end)
